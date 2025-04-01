@@ -26,6 +26,9 @@ BASE_DIR = os.getenv("RENDER_DISK_PATH", "/opt/render/project")
 DB_PATH = os.path.join(BASE_DIR, "data", "interactions.db")
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 
+# Create a thread lock for database operations
+db_lock = threading.RLock()
+
 # Ensure directories exist
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 os.makedirs(MODEL_DIR, exist_ok=True)
@@ -55,7 +58,8 @@ try:
             nltk.download(resource, download_dir=NLTK_DATA_PATH, quiet=True)
 except Exception as e:
     logger.error(f"Failed to download NLTK data to {NLTK_DATA_PATH}: {e}. Using fallback.")
-    raise  # Re-raise for debugging purposes
+    # Don't raise the exception, attempt to continue without these resources
+    pass
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -74,7 +78,11 @@ def collect_data():
         logger.info(f"Received learning data from device: {data.get('deviceId', 'unknown')}")
         if not data or 'interactions' not in data:
             return jsonify({'success': False, 'message': 'Invalid data format'}), 400
-        store_interactions(DB_PATH, data)
+        
+        # Use thread lock for database operations
+        with db_lock:
+            store_interactions(DB_PATH, data)
+            
         latest_model = get_latest_model_info()
         return jsonify({
             'success': True,
@@ -84,16 +92,21 @@ def collect_data():
         })
     except Exception as e:
         logger.error(f"Error processing learning data: {str(e)}")
-        return jsonify({'success': False, 'messageV2': f'Error: {str(e)}'}), 500
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 @app.route('/api/ai/models/<version>', methods=['GET'])
 def get_model(version):
     if request.headers.get('X-API-Key') != API_KEY:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
     model_path = os.path.join(MODEL_DIR, f"model_{version}.mlmodel")
     if os.path.exists(model_path):
         logger.info(f"Serving model version {version}")
-        return send_file(model_path, mimetype='application/octet-stream')
+        try:
+            return send_file(model_path, mimetype='application/octet-stream')
+        except Exception as e:
+            logger.error(f"Error sending model file: {str(e)}")
+            return jsonify({'success': False, 'message': f'Error retrieving model: {str(e)}'}), 500
     else:
         logger.warning(f"Model version {version} not found")
         return jsonify({'success': False, 'message': 'Model not found'}), 404
@@ -115,24 +128,27 @@ def get_stats():
     admin_key = os.getenv("ADMIN_API_KEY", "rnd_2DfFj1QmKeAWcXF5u9Z0oV35kBiN")
     if request.headers.get('X-Admin-Key') != admin_key:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    conn = None
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM interactions")
-        total_interactions = cursor.fetchone()[0]
-        cursor.execute("SELECT COUNT(DISTINCT device_id) FROM interactions")
-        unique_devices = cursor.fetchone()[0]
-        cursor.execute("SELECT AVG(rating) FROM feedback")
-        avg_rating = cursor.fetchone()[0] or 0
-        cursor.execute("""
-            SELECT detected_intent, COUNT(*) as count 
-            FROM interactions 
-            GROUP BY detected_intent 
-            ORDER BY count DESC 
-            LIMIT 5
-        """)
-        top_intents = [{"intent": row[0], "count": row[1]} for row in cursor.fetchall()]
-        conn.close()
+        with db_lock:
+            conn = sqlite3.connect(DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM interactions")
+            total_interactions = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(DISTINCT device_id) FROM interactions")
+            unique_devices = cursor.fetchone()[0]
+            cursor.execute("SELECT AVG(rating) FROM feedback")
+            avg_rating = cursor.fetchone()[0] or 0
+            cursor.execute("""
+                SELECT detected_intent, COUNT(*) as count 
+                FROM interactions 
+                GROUP BY detected_intent 
+                ORDER BY count DESC 
+                LIMIT 5
+            """)
+            top_intents = [{"intent": row[0], "count": row[1]} for row in cursor.fetchall()]
+        
         model_info = get_latest_model_info()
         return jsonify({
             'success': True,
@@ -148,27 +164,43 @@ def get_stats():
     except Exception as e:
         logger.error(f"Error getting stats: {str(e)}")
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+    finally:
+        if conn:
+            conn.close()
 
 def get_latest_model_info():
     info_path = os.path.join(MODEL_DIR, "latest_model.json")
-    if not os.path.exists(info_path):
-        default_info = {
+    try:
+        if not os.path.exists(info_path):
+            default_info = {
+                'version': '1.0.0',
+                'path': os.path.join(MODEL_DIR, 'model_1.0.0.mlmodel'),
+                'training_date': datetime.now().isoformat()
+            }
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(info_path), exist_ok=True)
+            with open(info_path, 'w') as f:
+                json.dump(default_info, f)
+            return default_info
+            
+        with open(info_path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Error accessing model info: {e}")
+        # Return a fallback if file access fails
+        return {
             'version': '1.0.0',
             'path': os.path.join(MODEL_DIR, 'model_1.0.0.mlmodel'),
             'training_date': datetime.now().isoformat()
         }
-        with open(info_path, 'w') as f:
-            json.dump(default_info, f)
-        return default_info
-    with open(info_path, 'r') as f:
-        return json.load(f)
 
 def train_model_job():
     # Lazy import to avoid circular import
     from learning.trainer import train_new_model
     try:
         logger.info("Starting scheduled model training")
-        new_version = train_new_model(DB_PATH)
+        with db_lock:
+            new_version = train_new_model(DB_PATH)
         logger.info(f"Model training completed. New version: {new_version}")
     except Exception as e:
         logger.error(f"Model training failed: {str(e)}")
@@ -182,6 +214,38 @@ def run_scheduler():
 scheduler_thread = threading.Thread(target=run_scheduler)
 scheduler_thread.daemon = True
 scheduler_thread.start()
+
+# Add a basic health check endpoint
+@app.route('/health', methods=['GET'])
+def health_check():
+    try:
+        # Check if database is accessible
+        conn = None
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            conn.execute("SELECT 1")
+            db_status = "healthy"
+        except Exception as e:
+            db_status = f"unhealthy: {str(e)}"
+        finally:
+            if conn:
+                conn.close()
+                
+        # Check if model directory is accessible    
+        model_status = "healthy" if os.access(MODEL_DIR, os.R_OK | os.W_OK) else "unhealthy: permission denied"
+        
+        return jsonify({
+            'status': 'up',
+            'database': db_status,
+            'models': model_status,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
 
 if __name__ == '__main__':
     pip_version = subprocess.check_output(["pip", "--version"]).decode("utf-8").strip()
