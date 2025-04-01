@@ -10,6 +10,7 @@ from datetime import datetime
 import logging
 import subprocess
 import nltk
+import stat  # Added for permission debugging
 from utils.db_helpers import init_db, store_interactions
 
 # Configure logging
@@ -20,30 +21,47 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Set the base directory for persistent storage
+BASE_DIR = os.getenv("RENDER_DISK_PATH", "/opt/render/project")
+DB_PATH = os.path.join(BASE_DIR, "data", "interactions.db")
+MODEL_DIR = os.path.join(BASE_DIR, "models")
+
+# Ensure directories exist
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+# Debug: Check permissions of the base directory
+def check_permissions(path):
+    try:
+        stats = os.stat(path)
+        permissions = stat.filemode(stats.st_mode)
+        logger.info(f"Permissions for {path}: {permissions}")
+    except Exception as e:
+        logger.error(f"Cannot check permissions for {path}: {e}")
+
+check_permissions(BASE_DIR)
+
 # Set NLTK data path to persistent disk
-NLTK_DATA_PATH = os.path.join(os.getenv("RENDER_DISK_PATH", "/var/data"), "nltk_data")
+NLTK_DATA_PATH = os.path.join(BASE_DIR, "nltk_data")
 os.makedirs(NLTK_DATA_PATH, exist_ok=True)
 nltk.data.path.append(NLTK_DATA_PATH)
 
 # Download NLTK data if not present
 try:
     for resource in ['punkt', 'stopwords', 'wordnet']:
-        if not os.path.exists(os.path.join(NLTK_DATA_PATH, resource)):
+        resource_path = os.path.join(NLTK_DATA_PATH, resource)
+        if not os.path.exists(resource_path):
+            logger.info(f"Downloading NLTK resource: {resource} to {NLTK_DATA_PATH}")
             nltk.download(resource, download_dir=NLTK_DATA_PATH, quiet=True)
 except Exception as e:
-    logger.warning(f"Failed to download NLTK data: {e}. Using fallback.")
+    logger.error(f"Failed to download NLTK data to {NLTK_DATA_PATH}: {e}. Using fallback.")
+    raise  # Re-raise for debugging purposes
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
 PORT = int(os.getenv("PORT", 10000))
-BASE_DIR = os.getenv("RENDER_DISK_PATH", "/var/data")
-DB_PATH = os.path.join(BASE_DIR, "data", "interactions.db")
-MODEL_DIR = os.path.join(BASE_DIR, "models")
-os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-os.makedirs(MODEL_DIR, exist_ok=True)
-
 init_db(DB_PATH)
 API_KEY = os.getenv("API_KEY", "rnd_2DfFj1QmKeAWcXF5u9Z0oV35kBiN")
 
@@ -66,7 +84,7 @@ def collect_data():
         })
     except Exception as e:
         logger.error(f"Error processing learning data: {str(e)}")
-        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+        return jsonify({'success': False, 'messageV2': f'Error: {str(e)}'}), 500
 
 @app.route('/api/ai/models/<version>', methods=['GET'])
 def get_model(version):
@@ -85,6 +103,7 @@ def latest_model():
     if request.headers.get('X-API-Key') != API_KEY:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
     model_info = get_latest_model_info()
+    returnV2': f'Latest model info'}), 200
     return jsonify({
         'success': True,
         'message': 'Latest model info',
