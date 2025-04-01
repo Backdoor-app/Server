@@ -94,6 +94,80 @@ def collect_data():
         logger.error(f"Error processing learning data: {str(e)}")
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
+@app.route('/api/ai/upload-model', methods=['POST'])
+def upload_model():
+    """Endpoint for uploading user-trained .mlmodel files to be combined with server models."""
+    if request.headers.get('X-API-Key') != API_KEY:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    try:
+        # Check if file is included in the request
+        if 'model' not in request.files:
+            return jsonify({'success': False, 'message': 'No model file provided'}), 400
+        
+        model_file = request.files['model']
+        
+        # Check if a valid file was selected
+        if model_file.filename == '':
+            return jsonify({'success': False, 'message': 'No model file selected'}), 400
+        
+        # Get device ID and other metadata
+        device_id = request.form.get('deviceId', 'unknown')
+        app_version = request.form.get('appVersion', 'unknown')
+        description = request.form.get('description', '')
+        
+        # Ensure the file is a CoreML model
+        if not model_file.filename.endswith('.mlmodel'):
+            return jsonify({'success': False, 'message': 'File must be a CoreML model (.mlmodel)'}), 400
+        
+        # Create directory for uploaded models if it doesn't exist
+        UPLOADED_MODELS_DIR = os.path.join(MODEL_DIR, "uploaded")
+        os.makedirs(UPLOADED_MODELS_DIR, exist_ok=True)
+        
+        # Generate a unique filename
+        timestamp = int(datetime.now().timestamp())
+        unique_filename = f"model_upload_{device_id}_{timestamp}.mlmodel"
+        file_path = os.path.join(UPLOADED_MODELS_DIR, unique_filename)
+        
+        # Save the uploaded model
+        model_file.save(file_path)
+        logger.info(f"Saved uploaded model from device {device_id} to {file_path}")
+        
+        # Store model metadata in database
+        from utils.db_helpers import store_uploaded_model
+        with db_lock:
+            model_id = store_uploaded_model(
+                DB_PATH, 
+                device_id=device_id,
+                app_version=app_version,
+                description=description,
+                file_path=file_path,
+                file_size=os.path.getsize(file_path),
+                original_filename=model_file.filename
+            )
+        
+        # Trigger async model retraining if enough models are uploaded
+        from learning.trainer import should_retrain, trigger_retraining
+        if should_retrain(DB_PATH):
+            threading.Thread(target=trigger_retraining, args=(DB_PATH,), daemon=True).start()
+            retraining_status = "Model retraining triggered"
+        else:
+            retraining_status = "Model will be incorporated in next scheduled training"
+        
+        # Return success response
+        latest_model = get_latest_model_info()
+        return jsonify({
+            'success': True,
+            'message': f'Model uploaded successfully. {retraining_status}',
+            'modelId': model_id,
+            'latestModelVersion': latest_model['version'],
+            'modelDownloadURL': f"https://{request.host}/api/ai/models/{latest_model['version']}"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error uploading model: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+
 @app.route('/api/ai/models/<version>', methods=['GET'])
 def get_model(version):
     if request.headers.get('X-API-Key') != API_KEY:
@@ -511,6 +585,75 @@ def api_documentation():
   "latestModelVersion": "1.0.1712052481",
   "modelDownloadURL": "https://yourdomain.com/api/ai/models/1.0.1712052481"
 }</pre>
+                </div>
+            </div>
+            
+            <!-- POST /api/ai/upload-model -->
+            <div class="endpoint-card">
+                <span class="method post">POST</span>
+                <span class="path">/api/ai/upload-model</span>
+                <button class="copy-btn" onclick="copyToClipboard('https://' + window.location.host + '/api/ai/upload-model')">Copy URL</button>
+                
+                <div class="description">
+                    <p>Upload a CoreML model trained on your device to be combined with other models on the server. The server will create an ensemble model incorporating multiple uploaded models.</p>
+                </div>
+                
+                <div class="auth-info">
+                    <strong>Authentication Required:</strong> Header <code>X-API-Key</code> must be provided.
+                </div>
+                
+                <div class="request-example">
+                    <h3>Request Format</h3>
+                    <p>This endpoint requires a <code>multipart/form-data</code> request with the following fields:</p>
+                    <table>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td>model</td>
+                            <td>File</td>
+                            <td>The CoreML (.mlmodel) file to upload</td>
+                        </tr>
+                        <tr>
+                            <td>deviceId</td>
+                            <td>String</td>
+                            <td>The unique identifier of the uploading device</td>
+                        </tr>
+                        <tr>
+                            <td>appVersion</td>
+                            <td>String</td>
+                            <td>The version of the app sending the model</td>
+                        </tr>
+                        <tr>
+                            <td>description</td>
+                            <td>String</td>
+                            <td>Optional description of the model</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="response-example">
+                    <h3>Response Example</h3>
+                    <pre>{
+  "success": true,
+  "message": "Model uploaded successfully. Model will be incorporated in next scheduled training",
+  "modelId": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+  "latestModelVersion": "1.0.1712052481",
+  "modelDownloadURL": "https://yourdomain.com/api/ai/models/1.0.1712052481"
+}</pre>
+                </div>
+                
+                <div class="description">
+                    <h3>Model Processing</h3>
+                    <p>After models are uploaded:</p>
+                    <ul>
+                        <li>They are stored on the server and queued for processing</li>
+                        <li>When enough models are uploaded (3+) or after a time threshold, retraining is triggered</li>
+                        <li>The server combines all uploaded models with its base model using ensemble techniques</li>
+                        <li>The resulting model is available through the standard model endpoints</li>
+                    </ul>
                 </div>
             </div>
             
