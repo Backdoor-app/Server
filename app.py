@@ -10,7 +10,6 @@ from datetime import datetime
 import logging
 import subprocess
 import nltk
-from learning.trainer import train_new_model
 from utils.db_helpers import init_db, store_interactions
 
 # Configure logging
@@ -48,7 +47,6 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 init_db(DB_PATH)
 API_KEY = os.getenv("API_KEY", "bd6_ai_learn_9821")
 
-# API Endpoints (unchanged)
 @app.route('/api/ai/learn', methods=['POST'])
 def collect_data():
     if request.headers.get('X-API-Key') != API_KEY:
@@ -148,6 +146,8 @@ def get_latest_model_info():
         return json.load(f)
 
 def train_model_job():
+    # Lazy import to avoid circular import
+    from learning.trainer import train_new_model
     try:
         logger.info("Starting scheduled model training")
         new_version = train_new_model(DB_PATH)
