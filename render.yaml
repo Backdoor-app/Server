@@ -11,8 +11,4 @@ services:
       - key: ADMIN_API_KEY
         value: "admin_bd6_ai_9821"  # Replace with a secure key
       - key: PYTHON_VERSION
-        value: "3.9"  # Ensure compatibility with coremltools
-    disk:
-      name: ai-data
-      mountPath: "/var/data"
-      sizeGB: 1  # Free tier limit; upgrade plan for more
+        value: "3.9"  # Ensure compatibility with coremltool
