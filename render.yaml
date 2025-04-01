@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: backdoor-ai
+    env: python
+    plan: free  # Use 'starter' or higher for persistent disks beyond 1GB
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
+    envVars:
+      - key: API_KEY
+        value: "bd6_ai_learn_9821"  # Replace with a secure key
+      - key: ADMIN_API_KEY
+        value: "admin_bd6_ai_9821"  # Replace with a secure key
+      - key: PYTHON_VERSION
+        value: "3.9"  # Ensure compatibility with coremltools
+    disk:
+      name: ai-data
+      mountPath: "/var/data"
+      sizeGB: 1  # Free tier limit; upgrade plan for more
