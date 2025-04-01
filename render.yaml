@@ -7,7 +7,7 @@ services:
     startCommand: "python app.py"
     envVars:
       - key: API_KEY
-        value: "bd6_ai_learn_9821"  # Replace with a secure key
+        value: "rnd_2DfFj1QmKeAWcXF5u9Z0oV35kBiN"  # Replace with a secure key
       - key: ADMIN_API_KEY
         value: "admin_bd6_ai_9821"  # Replace with a secure key
       - key: PYTHON_VERSION
