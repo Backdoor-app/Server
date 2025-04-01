@@ -103,7 +103,6 @@ def latest_model():
     if request.headers.get('X-API-Key') != API_KEY:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
     model_info = get_latest_model_info()
-    returnV2': f'Latest model info'}), 200
     return jsonify({
         'success': True,
         'message': 'Latest model info',
