@@ -45,7 +45,7 @@ os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 init_db(DB_PATH)
-API_KEY = os.getenv("API_KEY", "bd6_ai_learn_9821")
+API_KEY = os.getenv("API_KEY", "rnd_2DfFj1QmKeAWcXF5u9Z0oV35kBiN")
 
 @app.route('/api/ai/learn', methods=['POST'])
 def collect_data():
@@ -94,7 +94,7 @@ def latest_model():
 
 @app.route('/api/ai/stats', methods=['GET'])
 def get_stats():
-    admin_key = os.getenv("ADMIN_API_KEY", "admin_bd6_ai_9821")
+    admin_key = os.getenv("ADMIN_API_KEY", "rnd_2DfFj1QmKeAWcXF5u9Z0oV35kBiN")
     if request.headers.get('X-Admin-Key') != admin_key:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
     try:
