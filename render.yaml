@@ -2,8 +2,8 @@ services:
   - type: web
     name: backdoor-ai
     env: python
-    plan: free  # Use 'starter' for persistent disks beyond 1GB
-    buildCommand: "bash setup.sh && pip install -r requirements.txt"
+    plan: free  # Use 'starter' or higher for persistent disks beyond 1GB
+    buildCommand: "python -m pip install --upgrade pip && pip install -r requirements.txt"
     startCommand: "python app.py"
     envVars:
       - key: API_KEY
