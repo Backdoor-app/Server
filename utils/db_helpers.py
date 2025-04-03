@@ -6,6 +6,7 @@ This module provides functions for:
 - Storing and retrieving interaction data
 - Managing model metadata
 - Tracking model incorporation status
+- Google Drive integration for database storage
 """
 
 import sqlite3
@@ -13,6 +14,8 @@ import os
 import logging
 import uuid
 import json
+import time
+import random
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Tuple, Union
 from contextlib import contextmanager
@@ -21,10 +24,24 @@ from contextlib import contextmanager
 try:
     import config
     DB_TIMEOUT = getattr(config, 'DB_LOCK_TIMEOUT', 60)
+    GOOGLE_DRIVE_ENABLED = getattr(config, 'GOOGLE_DRIVE_ENABLED', False)
 except ImportError:
     DB_TIMEOUT = 60  # Default timeout if config unavailable
+    GOOGLE_DRIVE_ENABLED = False
 
 logger = logging.getLogger(__name__)
+
+# Import Google Drive storage if enabled
+_drive_storage = None
+if GOOGLE_DRIVE_ENABLED:
+    try:
+        from utils.drive_storage import get_drive_storage
+        _drive_storage = get_drive_storage()
+        logger.info("Google Drive storage integration enabled")
+    except (ImportError, RuntimeError) as e:
+        logger.warning(f"Could not initialize Google Drive storage: {e}")
+        logger.warning("Falling back to local storage")
+        GOOGLE_DRIVE_ENABLED = False
 
 @contextmanager
 def get_connection(db_path: str, row_factory: bool = False):
@@ -38,20 +55,63 @@ def get_connection(db_path: str, row_factory: bool = False):
     Yields:
         sqlite3.Connection: Database connection
     """
+    # Use Google Drive storage if enabled
+    if GOOGLE_DRIVE_ENABLED and _drive_storage:
+        # Get local path from Drive storage
+        try:
+            local_db_path = _drive_storage.get_db_path()
+        except Exception as e:
+            logger.error(f"Failed to get database from Google Drive: {e}")
+            logger.warning(f"Falling back to local database at {db_path}")
+            local_db_path = db_path
+    else:
+        local_db_path = db_path
+        
     conn = None
-    try:
-        conn = sqlite3.connect(db_path, timeout=DB_TIMEOUT)
-        if row_factory:
-            conn.row_factory = sqlite3.Row
-        yield conn
-    except sqlite3.Error as e:
-        logger.error(f"Database connection error: {e}")
-        if conn:
-            conn.rollback()
-        raise
-    finally:
-        if conn:
-            conn.close()
+    retries = 3  # Retry connections in case of database lock
+    last_error = None
+    
+    while retries > 0:
+        try:
+            conn = sqlite3.connect(local_db_path, timeout=DB_TIMEOUT)
+            if row_factory:
+                conn.row_factory = sqlite3.Row
+            yield conn
+            
+            # Upload to Google Drive if used
+            if GOOGLE_DRIVE_ENABLED and _drive_storage:
+                try:
+                    _drive_storage.upload_db()
+                except Exception as e:
+                    logger.error(f"Failed to upload database to Google Drive: {e}")
+            
+            # Break retry loop on success
+            break
+            
+        except sqlite3.OperationalError as e:
+            # Retry if database is locked
+            if "database is locked" in str(e) and retries > 1:
+                retries -= 1
+                last_error = e
+                # Random backoff to reduce contention
+                time.sleep(random.uniform(0.5, 2.0))
+            else:
+                logger.error(f"Database operational error: {e}")
+                if conn:
+                    conn.rollback()
+                raise
+        except sqlite3.Error as e:
+            logger.error(f"Database connection error: {e}")
+            if conn:
+                conn.rollback()
+            raise
+        finally:
+            if conn:
+                conn.close()
+
+    # If we've exhausted retries, raise the last error
+    if retries == 0 and last_error:
+        raise last_error
 
 def init_db(db_path: str) -> None:
     """
@@ -60,6 +120,7 @@ def init_db(db_path: str) -> None:
     Args:
         db_path: Path to the SQLite database
     """
+    # Ensure directory exists for local storage
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     
     with get_connection(db_path) as conn:
@@ -138,7 +199,9 @@ def init_db(db_path: str) -> None:
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_uploaded_status ON uploaded_models(incorporation_status)')
         
         conn.commit()
-        logger.info(f"Database initialized at {db_path}")
+        
+        storage_type = "Google Drive" if GOOGLE_DRIVE_ENABLED else "local file"
+        logger.info(f"Database initialized using {storage_type} storage at {db_path}")
 
 def store_interactions(db_path: str, data: Dict[str, Any]) -> int:
     """
@@ -223,6 +286,20 @@ def store_uploaded_model(
     """
     model_id = str(uuid.uuid4())
     upload_date = datetime.now().isoformat()
+    
+    # Upload to Google Drive if enabled
+    drive_metadata = None
+    if GOOGLE_DRIVE_ENABLED and _drive_storage and os.path.exists(file_path):
+        try:
+            model_name = f"model_upload_{device_id}_{model_id}.mlmodel"
+            drive_metadata = _drive_storage.upload_model(file_path, model_name)
+            if drive_metadata and drive_metadata.get('success'):
+                # Update file_path to include Google Drive ID for reference
+                file_path = f"gdrive:{drive_metadata['id']}:{file_path}"
+                logger.info(f"Uploaded model to Google Drive: {drive_metadata['id']}")
+        except Exception as e:
+            logger.error(f"Failed to upload model to Google Drive: {e}")
+            # Continue with local reference only
     
     with get_connection(db_path) as conn:
         cursor = conn.cursor()
@@ -313,7 +390,31 @@ def get_pending_uploaded_models(db_path: str) -> List[Dict[str, Any]]:
                 WHERE incorporation_status IN ('pending', 'processing')
                 ORDER BY upload_date ASC
             ''')
-            return [dict(row) for row in cursor.fetchall()]
+            
+            models = [dict(row) for row in cursor.fetchall()]
+            
+            # If using Google Drive, resolve file paths as needed
+            if GOOGLE_DRIVE_ENABLED and _drive_storage:
+                for model in models:
+                    if model['file_path'].startswith('gdrive:'):
+                        try:
+                            # Extract model name from path
+                            parts = model['file_path'].split(':')
+                            if len(parts) >= 3:
+                                drive_id = parts[1]
+                                original_path = ':'.join(parts[2:])
+                                model_name = os.path.basename(original_path)
+                                
+                                # Download from Google Drive
+                                download_info = _drive_storage.download_model(model_name)
+                                if download_info and download_info.get('success'):
+                                    # Update file_path to local path
+                                    model['file_path'] = download_info['local_path']
+                        except Exception as e:
+                            logger.error(f"Failed to resolve Google Drive model file: {e}")
+                            # Keep original path, will need to be handled downstream
+            
+            return models
             
         except Exception as e:
             logger.error(f"Error retrieving pending uploaded models: {e}")
@@ -363,6 +464,9 @@ def get_model_stats(db_path: str) -> Dict[str, Any]:
                 stats['latest_training_size'] = latest[2]
                 stats['latest_training_date'] = latest[3]
                 
+            # Add storage type information
+            stats['storage_type'] = "google_drive" if GOOGLE_DRIVE_ENABLED else "local"
+            
             return stats
             
         except Exception as e:
@@ -393,6 +497,19 @@ def store_model_version(
     Returns:
         bool: Whether the operation was successful
     """
+    # Upload to Google Drive if enabled
+    drive_path = None
+    if GOOGLE_DRIVE_ENABLED and _drive_storage and os.path.exists(path):
+        try:
+            model_name = f"model_{version}.mlmodel"
+            drive_metadata = _drive_storage.upload_model(path, model_name)
+            if drive_metadata and drive_metadata.get('success'):
+                drive_path = f"gdrive:{drive_metadata['id']}:{path}"
+                logger.info(f"Uploaded model version {version} to Google Drive: {drive_metadata['id']}")
+        except Exception as e:
+            logger.error(f"Failed to upload model to Google Drive: {e}")
+            # Continue with local storage only
+    
     training_date = datetime.now().isoformat()
     
     with get_connection(db_path) as conn:
@@ -405,7 +522,7 @@ def store_model_version(
                 VALUES (?, ?, ?, ?, ?)
             ''', (
                 version,
-                path,
+                drive_path or path,  # Use Drive path if available
                 float(accuracy),
                 training_data_size,
                 training_date
@@ -434,3 +551,52 @@ def store_model_version(
             conn.rollback()
             logger.error(f"Error storing model version: {e}")
             return False
+
+def get_model_path(db_path: str, version: str) -> Optional[str]:
+    """
+    Get the path to a model file, resolving Google Drive paths if needed.
+    
+    Args:
+        db_path: Path to the SQLite database
+        version: Version of the model to retrieve
+        
+    Returns:
+        Optional[str]: Local path to the model file or None if not found
+    """
+    with get_connection(db_path) as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT path FROM model_versions WHERE version = ?", (version,))
+            result = cursor.fetchone()
+            
+            if not result:
+                logger.warning(f"Model version {version} not found in database")
+                return None
+                
+            path = result[0]
+            
+            # Handle Google Drive paths
+            if GOOGLE_DRIVE_ENABLED and _drive_storage and path.startswith('gdrive:'):
+                try:
+                    parts = path.split(':')
+                    if len(parts) >= 3:
+                        drive_id = parts[1]
+                        original_path = ':'.join(parts[2:])
+                        model_name = f"model_{version}.mlmodel"
+                        
+                        # Download from Google Drive
+                        download_info = _drive_storage.download_model(model_name)
+                        if download_info and download_info.get('success'):
+                            return download_info['local_path']
+                        else:
+                            logger.error(f"Failed to download model {version} from Google Drive")
+                            # Fall back to original path, might not exist locally
+                except Exception as e:
+                    logger.error(f"Error resolving Google Drive model path: {e}")
+            
+            # Return original path (either local or couldn't resolve Drive path)
+            return path
+            
+        except Exception as e:
+            logger.error(f"Error retrieving model path: {e}")
+            return None

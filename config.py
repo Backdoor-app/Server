@@ -42,3 +42,16 @@ DB_LOCK_TIMEOUT = 60
 
 # Model naming
 MODEL_VERSION_PREFIX = "1.0."  # Base prefix for model versions
+
+# Google Drive Integration Settings
+GOOGLE_DRIVE_ENABLED = os.getenv("GOOGLE_DRIVE_ENABLED", "False").lower() in ["true", "1", "yes"]
+GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_CREDENTIALS_PATH", os.path.join(BASE_DIR, "google_credentials.json"))
+GOOGLE_DB_FILENAME = os.getenv("GOOGLE_DB_FILENAME", "backdoor_ai_db.db")
+GOOGLE_MODELS_FOLDER = os.getenv("GOOGLE_MODELS_FOLDER", "backdoor_models")
+
+# Google Drive Sync Settings
+GOOGLE_DB_SYNC_INTERVAL = int(os.getenv("GOOGLE_DB_SYNC_INTERVAL", "60"))  # Seconds
+GOOGLE_MODELS_SYNC_INTERVAL = int(os.getenv("GOOGLE_MODELS_SYNC_INTERVAL", "300"))  # Seconds
+
+# Storage Mode (google_drive or local)
+STORAGE_MODE = "google_drive" if GOOGLE_DRIVE_ENABLED else "local"
