@@ -82,6 +82,29 @@ ensure_nltk_resources()
 app = Flask(__name__)
 CORS(app)
 
+# Check if Google Drive integration is enabled
+if config.GOOGLE_DRIVE_ENABLED:
+    try:
+        # Import Google Drive storage module
+        from utils.drive_storage import init_drive_storage, get_drive_storage
+        
+        # Initialize Google Drive storage with credentials
+        drive_storage = init_drive_storage(
+            config.GOOGLE_CREDENTIALS_PATH,
+            config.GOOGLE_DB_FILENAME,
+            config.GOOGLE_MODELS_FOLDER
+        )
+        
+        logger.info(f"Google Drive storage initialized successfully")
+        logger.info(f"Using database: {config.GOOGLE_DB_FILENAME}")
+        logger.info(f"Using models folder: {config.GOOGLE_MODELS_FOLDER}")
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize Google Drive storage: {e}")
+        logger.warning("Falling back to local storage")
+        # Disable Google Drive mode
+        config.GOOGLE_DRIVE_ENABLED = False
+
 # Initialize database on startup
 init_db(config.DB_PATH)
 
@@ -210,20 +233,42 @@ def get_model(version):
     API endpoint for downloading a specific model version.
     
     Requires authentication via X-API-Key header.
+    Supports both local and Google Drive storage.
     """
     if request.headers.get('X-API-Key') != config.API_KEY:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
     
-    model_path = os.path.join(config.MODEL_DIR, f"model_{version}.mlmodel")
+    # First try to get model path from database (handles Google Drive paths)
+    from utils.db_helpers import get_model_path
+    model_path = get_model_path(config.DB_PATH, version)
+    
+    # If not found in database, try traditional path
+    if not model_path:
+        model_path = os.path.join(config.MODEL_DIR, f"model_{version}.mlmodel")
     
     if os.path.exists(model_path):
-        logger.info(f"Serving model version {version}")
+        logger.info(f"Serving model version {version} from {model_path}")
         try:
             return send_file(model_path, mimetype='application/octet-stream')
         except Exception as e:
             logger.error(f"Error sending model file: {e}")
             return jsonify({'success': False, 'message': f'Error retrieving model: {e}'}), 500
     else:
+        # If using Google Drive, try one more method - direct download
+        if config.GOOGLE_DRIVE_ENABLED:
+            try:
+                from utils.drive_storage import get_drive_storage
+                drive_storage = get_drive_storage()
+                model_name = f"model_{version}.mlmodel"
+                download_info = drive_storage.download_model(model_name)
+                
+                if download_info and download_info.get('success'):
+                    local_path = download_info['local_path']
+                    logger.info(f"Serving model version {version} from Google Drive")
+                    return send_file(local_path, mimetype='application/octet-stream')
+            except Exception as e:
+                logger.error(f"Error retrieving model from Google Drive: {e}")
+        
         logger.warning(f"Model version {version} not found")
         return jsonify({'success': False, 'message': 'Model not found'}), 404
 
