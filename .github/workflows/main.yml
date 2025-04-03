@@ -1,0 +1,69 @@
+name: Download Model from Dropbox and Create Pull Request
+
+on:
+  push:
+    branches:
+      - main  # Change to your desired branch
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Git LFS
+      run: |
+        git lfs install
+
+    - name: Download model from Dropbox
+      run: |
+        start_time=$(date +%s)
+        mkdir -p model
+        curl -L -o model/coreml_model.mlmodel \
+          "https://www.dropbox.com/scl/fi/2xarhyii46tr9amkqh764/coreml_model.mlmodel?rlkey=j3cxmpjhxj8bbwzw11j1hy54c&st=zuyjx83u&dl=1"
+        
+        # Verify the file exists and is not empty
+        if [ ! -s "model/coreml_model.mlmodel" ]; then
+          echo "Error: Model file is missing or empty!"
+          exit 1
+        fi
+        
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "Model download time: $duration seconds"
+
+    - name: Move model to repository and create new branch
+      run: |
+        start_time=$(date +%s)
+        
+        # Track the model file with Git LFS
+        git lfs track "model/coreml_model.mlmodel"
+        git add .gitattributes model/coreml_model.mlmodel
+        
+        # Configure Git
+        git config --local user.email "actions@github.com"
+        git config --local user.name "GitHub Actions"
+        
+        # Create and switch to a new branch
+        git checkout -b update-model
+        
+        # Commit changes
+        git commit -m "Add coreml_model.mlmodel using Git LFS"
+        
+        # Push the branch to GitHub
+        git push --set-upstream origin update-model -f
+        
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
+        echo "Move and commit time: $duration seconds"
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v6
+      with:
+        title: "Add coreml_model.mlmodel from Dropbox"
+        body: "This pull request adds the model downloaded from Dropbox."
+        head: update-model
+        base: main  # Change to your target branch
+        token: ${{ secrets.GITHUB_TOKEN }}
