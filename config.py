@@ -3,10 +3,6 @@ Configuration settings for the Backdoor AI Learning Server
 """
 import os
 
-# API Keys
-API_KEY = os.getenv("API_KEY", "rnd_2DfFj1QmKeAWcXF5u9Z0oV35kBiN")
-ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "rnd_2DfFj1QmKeAWcXF5u9Z0oV35kBiN")
-
 # Server settings
 PORT = int(os.getenv("PORT", 10000))
 

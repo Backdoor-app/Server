@@ -116,12 +116,7 @@ init_db(config.DB_PATH)
 def collect_data():
     """
     API endpoint for collecting user interaction data from devices.
-    
-    Requires authentication via X-API-Key header.
     """
-    if request.headers.get('X-API-Key') != config.API_KEY:
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
-    
     try:
         data = request.json
         device_id = data.get('deviceId', 'unknown')
@@ -154,11 +149,7 @@ def upload_model():
     API endpoint for uploading user-trained CoreML models.
     
     These models will be incorporated into an ensemble model on the server.
-    Requires authentication via X-API-Key header.
     """
-    if request.headers.get('X-API-Key') != config.API_KEY:
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
-    
     try:
         # Check if file is included in the request
         if 'model' not in request.files:
@@ -232,12 +223,8 @@ def get_model(version):
     """
     API endpoint for downloading a specific model version.
     
-    Requires authentication via X-API-Key header.
     Supports both local and Google Drive storage.
     """
-    if request.headers.get('X-API-Key') != config.API_KEY:
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
-    
     # First try to get model path from database (handles Google Drive paths)
     from utils.db_helpers import get_model_path
     model_path = get_model_path(config.DB_PATH, version)
@@ -276,12 +263,7 @@ def get_model(version):
 def latest_model():
     """
     API endpoint for getting information about the latest model.
-    
-    Requires authentication via X-API-Key header.
     """
-    if request.headers.get('X-API-Key') != config.API_KEY:
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
-    
     model_info = get_latest_model_info()
     
     return jsonify({
@@ -295,12 +277,7 @@ def latest_model():
 def get_stats():
     """
     API endpoint for getting system statistics.
-    
-    For administrative use only. Requires authentication via X-Admin-Key header.
     """
-    if request.headers.get('X-Admin-Key') != config.ADMIN_API_KEY:
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
-    
     conn = None
     try:
         with db_lock:
@@ -727,9 +704,7 @@ def api_documentation():
                     <p>Submit interaction data from devices to be used for model training. Returns information about the latest model version.</p>
                 </div>
                 
-                <div class="auth-info">
-                    <strong>Authentication Required:</strong> Header <code>X-API-Key</code> must be provided.
-                </div>
+                <!-- No authentication required -->
                 
                 <div class="request-example">
                     <h3>Request Example</h3>
@@ -776,9 +751,7 @@ def api_documentation():
                     <p>Upload a CoreML model trained on your device to be combined with other models on the server. The server will create an ensemble model incorporating multiple uploaded models.</p>
                 </div>
                 
-                <div class="auth-info">
-                    <strong>Authentication Required:</strong> Header <code>X-API-Key</code> must be provided.
-                </div>
+                <!-- No authentication required -->
                 
                 <div class="request-example">
                     <h3>Request Format</h3>
@@ -845,9 +818,7 @@ def api_documentation():
                     <p>Download a specific model version. Returns the CoreML model file.</p>
                 </div>
                 
-                <div class="auth-info">
-                    <strong>Authentication Required:</strong> Header <code>X-API-Key</code> must be provided.
-                </div>
+                <!-- No authentication required -->
                 
                 <div class="parameters">
                     <h3>URL Parameters</h3>
@@ -879,9 +850,7 @@ def api_documentation():
                     <p>Get information about the latest trained model. Returns the version and download URL.</p>
                 </div>
                 
-                <div class="auth-info">
-                    <strong>Authentication Required:</strong> Header <code>X-API-Key</code> must be provided.
-                </div>
+                <!-- No authentication required -->
                 
                 <div class="response-example">
                     <h3>Response Example</h3>
@@ -904,9 +873,7 @@ def api_documentation():
                     <p>Get statistics about the collected data and model training. For admin use only.</p>
                 </div>
                 
-                <div class="auth-info">
-                    <strong>Authentication Required:</strong> Header <code>X-Admin-Key</code> must be provided.
-                </div>
+                <!-- No authentication required -->
                 
                 <div class="response-example">
                     <h3>Response Example</h3>
