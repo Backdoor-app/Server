@@ -37,7 +37,7 @@ jobs:
       - name: Ping Database Server
         run: |
           echo "Pinging Database Server..."
-          curl -s -o response.txt -w "%{http_code}" https://database-iupv.onrender.com/ > status.txt
+          curl -s -o response.txt -w "%{http_code}" https://backdoor-ai-b3k3.onrender.com/ > status.txt
           STATUS=$(cat status.txt)
           echo "Status: $STATUS"
           if [ "$STATUS" -ne 200 ]; then
