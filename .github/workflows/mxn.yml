@@ -1,4 +1,4 @@
-name: Unzip .mlmodel and Create Release
+name: Extract .mlmodel and Create Release
 
 on:
   workflow_dispatch:
@@ -19,39 +19,13 @@ jobs:
       - name: Fetch LFS files
         run: git lfs fetch --all
 
-      - name: Install unzip
-        run: sudo apt-get update && sudo apt-get install -y unzip
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
-      # Create directory for extracted contents
-      - name: Create extraction directory
-        run: mkdir -p extracted_model
-
-      # Check if file exists and attempt to unzip, with fallback
-      - name: Extract .mlmodel file
-        run: |
-          MODEL_PATH="model/coreml_model.mlmodel"
-          if [ ! -f "$MODEL_PATH" ]; then
-            echo "Error: Model file not found at $MODEL_PATH"
-            exit 1
-          fi
-          # Check if it's a zip file by looking at file signature
-          if file "$MODEL_PATH" | grep -q "Zip archive"; then
-            unzip "$MODEL_PATH" -d extracted_model || {
-              echo "Warning: Not a valid ZIP, copying raw file instead"
-              cp "$MODEL_PATH" extracted_model/
-            }
-          else
-            echo "File is not a ZIP archive, copying raw file"
-            cp "$MODEL_PATH" extracted_model/
-          fi
-
-      # List extracted contents for debugging
-      - name: List extracted contents
-        run: ls -la extracted_model/
-
-      # Zip the extracted contents
-      - name: Zip the extracted contents
-        run: zip -r model_contents.zip extracted_model
+      - name: Run extraction script
+        run: python extract_mlmodel.py  # Updated path since script is in root
 
       - name: Create Release
         id: create_release
