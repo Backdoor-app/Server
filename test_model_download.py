@@ -57,7 +57,7 @@ def test_model_download():
             return False
         
         # Try to download/ensure the model
-        logger.info("Attempting to ensure the base model is available...")
+        logger.info("Attempting to download the base model from the user-provided Google Drive link...")
         result = ensure_base_model()
         
         if result:
