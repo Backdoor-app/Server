@@ -30,6 +30,11 @@ def clean_old_models_dropbox(keep_newest: int = config.MAX_MODELS_TO_KEEP) -> No
         for model in model_list:
             filename = model.get('name', '')
             if filename.startswith("model_") and filename.endswith(".mlmodel"):
+                # Don't delete the base model
+                if filename == config.BASE_MODEL_NAME:
+                    logger.info(f"Skipping base model {filename} during cleanup")
+                    continue
+                    
                 version = filename.replace("model_", "").replace(".mlmodel", "")
                 try:
                     # Extract timestamp from version (assuming format like 1.0.1712052481)
@@ -70,3 +75,31 @@ def clean_old_models_dropbox(keep_newest: int = config.MAX_MODELS_TO_KEEP) -> No
     
     except Exception as e:
         logger.error(f"Error cleaning up old models from Dropbox: {e}")
+
+def check_base_model_in_dropbox() -> bool:
+    """
+    Check if the base model exists in Dropbox
+    
+    Returns:
+        bool: True if base model exists, False otherwise
+    """
+    try:
+        # Get dropbox storage
+        from utils.dropbox_storage import get_dropbox_storage
+        dropbox_storage = get_dropbox_storage()
+        
+        # List all models
+        model_list = dropbox_storage.list_models()
+        
+        # Check if base model exists
+        for model in model_list:
+            if model.get('name') == config.BASE_MODEL_NAME:
+                logger.info(f"Found base model {config.BASE_MODEL_NAME} in Dropbox")
+                return True
+                
+        logger.warning(f"Base model {config.BASE_MODEL_NAME} not found in Dropbox")
+        return False
+        
+    except Exception as e:
+        logger.error(f"Error checking for base model in Dropbox: {e}")
+        return False
