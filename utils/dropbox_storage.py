@@ -251,29 +251,51 @@ class DropboxStorage:
                 logger.error(f"Error uploading database: {e}")
                 return False
     
-    def upload_model(self, local_path: str, model_name: str) -> Dict[str, Any]:
+    def upload_model(self, data_or_path, model_name: str) -> Dict[str, Any]:
         """
         Upload a model file to Dropbox.
         
         Args:
-            local_path: Path to the local model file
+            data_or_path: Either a file path, binary data, or file-like object
             model_name: Name to use for the model in Dropbox
             
         Returns:
             Dict with model information (success, name, path, etc.)
         """
         with self.lock:
-            if not os.path.exists(local_path):
-                logger.warning(f"Cannot upload model: File not found at {local_path}")
-                return {'success': False, 'error': 'File not found'}
-            
             dropbox_path = f"/{self.models_folder_name}/{model_name}"
+            file_data = None
+            file_size = 0
             
             try:
-                # Upload file with overwrite mode
-                with open(local_path, 'rb') as f:
-                    upload_result = self.dbx.files_upload(f.read(), dropbox_path, 
-                                                        mode=WriteMode.overwrite)
+                # Determine how to read the data based on the type of data_or_path
+                if isinstance(data_or_path, str):
+                    # It's a file path
+                    if not os.path.exists(data_or_path):
+                        logger.warning(f"Cannot upload model: File not found at {data_or_path}")
+                        return {'success': False, 'error': 'File not found'}
+                    
+                    # Read the file
+                    with open(data_or_path, 'rb') as f:
+                        file_data = f.read()
+                        file_size = len(file_data)
+                
+                elif hasattr(data_or_path, 'read'):
+                    # It's a file-like object (e.g., BytesIO)
+                    # Make sure we're at the beginning
+                    if hasattr(data_or_path, 'seek'):
+                        data_or_path.seek(0)
+                    file_data = data_or_path.read()
+                    file_size = len(file_data)
+                
+                else:
+                    # Assume it's binary data
+                    file_data = data_or_path
+                    file_size = len(file_data)
+                
+                # Upload to Dropbox
+                upload_result = self.dbx.files_upload(file_data, dropbox_path, 
+                                                    mode=WriteMode.overwrite)
                 
                 # Update model files map
                 self.model_files[model_name] = dropbox_path
@@ -289,7 +311,7 @@ class DropboxStorage:
                     'success': True,
                     'name': model_name,
                     'path': dropbox_path,
-                    'size': os.path.getsize(local_path),
+                    'size': file_size,
                     'upload_time': datetime.now().isoformat(),
                     'download_url': download_url
                 }

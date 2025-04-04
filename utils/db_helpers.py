@@ -515,12 +515,22 @@ def store_model_version(
     """
     # Upload to Dropbox if enabled
     dropbox_path = None
-    if DROPBOX_ENABLED and _dropbox_storage and os.path.exists(path):
+    if DROPBOX_ENABLED and _dropbox_storage:
         try:
             model_name = f"model_{version}.mlmodel"
-            dropbox_metadata = _dropbox_storage.upload_model(path, model_name)
+            
+            # Check if path is a string (file path) or file-like object
+            if isinstance(path, str) and os.path.exists(path):
+                # Upload file from path
+                with open(path, 'rb') as f:
+                    model_data = f.read()
+                dropbox_metadata = _dropbox_storage.upload_model(model_data, model_name)
+            else:
+                # Try to upload directly (might be a file-like object)
+                dropbox_metadata = _dropbox_storage.upload_model(path, model_name)
+                
             if dropbox_metadata and dropbox_metadata.get('success'):
-                dropbox_path = f"dropbox:{dropbox_metadata['path']}:{path}"
+                dropbox_path = f"dropbox:{dropbox_metadata['path']}"
                 logger.info(f"Uploaded model version {version} to Dropbox: {dropbox_metadata['path']}")
         except Exception as e:
             logger.error(f"Failed to upload model to Dropbox: {e}")
