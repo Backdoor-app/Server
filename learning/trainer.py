@@ -109,6 +109,7 @@ def trigger_retraining(db_path: str) -> Optional[str]:
 def clean_old_models(model_dir: str, keep_newest: int = config.MAX_MODELS_TO_KEEP) -> None:
     """
     Delete old model files to prevent disk space issues
+    For local storage only - use clean_old_models_dropbox for Dropbox storage
     
     Args:
         model_dir: Directory containing model files
@@ -265,25 +266,25 @@ def train_new_model(db_path: str) -> str:
                 logger.info("Successfully created ensemble model")
                 
                 # Store ensemble info in database
-                conn = sqlite3.connect(db_path)
-                cursor = conn.cursor()
-                
-                # Create ensemble models entry
-                cursor.execute('''
-                    INSERT INTO ensemble_models 
-                    (ensemble_version, description, component_models)
-                    VALUES (?, ?, ?)
-                ''', (
-                    model_version,
-                    f"Ensemble model with {len(uploaded_models)} uploaded models",
-                    json.dumps([{
-                        'id': model['id'],
-                        'device_id': model['device_id'],
-                        'original_file': model.get('original_filename', 'unknown')
-                    } for model in uploaded_models])
-                ))
-                conn.commit()
-                conn.close()
+                from utils.db_helpers import get_connection
+                with get_connection(db_path) as conn:
+                    cursor = conn.cursor()
+                    
+                    # Create ensemble models entry
+                    cursor.execute('''
+                        INSERT INTO ensemble_models 
+                        (ensemble_version, description, component_models)
+                        VALUES (?, ?, ?)
+                    ''', (
+                        model_version,
+                        f"Ensemble model with {len(uploaded_models)} uploaded models",
+                        json.dumps([{
+                            'id': model['id'],
+                            'device_id': model['device_id'],
+                            'original_file': model.get('original_filename', 'unknown')
+                        } for model in uploaded_models])
+                    ))
+                    conn.commit()
                 
                 # Update status for all incorporated models
                 for model in uploaded_models:
@@ -294,32 +295,31 @@ def train_new_model(db_path: str) -> str:
                 for model in uploaded_models:
                     update_model_incorporation_status(db_path, model['id'], 'failed')
         
-        # Save the model
+        # Save the model locally first
         model_dir = config.MODEL_DIR
         os.makedirs(model_dir, exist_ok=True)
         
         model_info = classifier.save(model_dir)
         logger.info(f"Saved model {model_version} with accuracy {model_info['accuracy']:.4f}")
         
-        # Store model metadata in database
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT INTO model_versions 
-            (version, path, accuracy, training_data_size, training_date)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (
+        # Store model metadata in database using the helper which will handle Dropbox upload
+        from utils.db_helpers import store_model_version
+        store_model_version(
+            db_path,
             model_version,
             model_info['coreml_path'],
             float(model_info['accuracy']),
             model_info['training_data_size'],
-            model_info['training_date']
-        ))
-        conn.commit()
-        conn.close()
+            classifier.is_ensemble,
+            list(classifier.component_models.items()) if hasattr(classifier, 'component_models') else None
+        )
         
-        # Clean up old models
-        clean_old_models(model_dir)
+        # Clean up old models (local or Dropbox depending on config)
+        if config.DROPBOX_ENABLED:
+            from learning.trainer_dropbox import clean_old_models_dropbox
+            clean_old_models_dropbox(config.MAX_MODELS_TO_KEEP)
+        else:
+            clean_old_models(model_dir)
         
         logger.info(f"New model version {model_version} created successfully")
         return model_version

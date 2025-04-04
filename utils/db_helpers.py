@@ -6,7 +6,7 @@ This module provides functions for:
 - Storing and retrieving interaction data
 - Managing model metadata
 - Tracking model incorporation status
-- Google Drive integration for database storage
+- Dropbox integration for database storage
 """
 
 import sqlite3
@@ -24,16 +24,16 @@ from contextlib import contextmanager
 try:
     import config
     DB_TIMEOUT = getattr(config, 'DB_LOCK_TIMEOUT', 60)
-    GOOGLE_DRIVE_ENABLED = getattr(config, 'GOOGLE_DRIVE_ENABLED', False)
+    DROPBOX_ENABLED = getattr(config, 'DROPBOX_ENABLED', False)
 except ImportError:
     DB_TIMEOUT = 60  # Default timeout if config unavailable
-    GOOGLE_DRIVE_ENABLED = False
+    DROPBOX_ENABLED = False
 
 logger = logging.getLogger(__name__)
 
 # Import Dropbox storage if enabled
 _dropbox_storage = None
-if GOOGLE_DRIVE_ENABLED:  # We're still using this variable name for now
+if DROPBOX_ENABLED:  
     try:
         from utils.dropbox_storage import get_dropbox_storage
         _dropbox_storage = get_dropbox_storage()
@@ -41,7 +41,7 @@ if GOOGLE_DRIVE_ENABLED:  # We're still using this variable name for now
     except (ImportError, RuntimeError) as e:
         logger.warning(f"Could not initialize Dropbox storage: {e}")
         logger.warning("Falling back to local storage")
-        GOOGLE_DRIVE_ENABLED = False
+        DROPBOX_ENABLED = False
 
 @contextmanager
 def get_connection(db_path: str, row_factory: bool = False):
@@ -56,7 +56,7 @@ def get_connection(db_path: str, row_factory: bool = False):
         sqlite3.Connection: Database connection
     """
     # Use Dropbox storage if enabled
-    if GOOGLE_DRIVE_ENABLED and _dropbox_storage:
+    if DROPBOX_ENABLED and _dropbox_storage:
         # Get local path from Dropbox storage
         try:
             local_db_path = _dropbox_storage.get_db_path()
@@ -79,7 +79,7 @@ def get_connection(db_path: str, row_factory: bool = False):
             yield conn
             
             # Upload to Dropbox if used
-            if GOOGLE_DRIVE_ENABLED and _dropbox_storage:
+            if DROPBOX_ENABLED and _dropbox_storage:
                 try:
                     _dropbox_storage.upload_db()
                 except Exception as e:
@@ -200,7 +200,7 @@ def init_db(db_path: str) -> None:
         
         conn.commit()
         
-        storage_type = "Google Drive" if GOOGLE_DRIVE_ENABLED else "local file"
+        storage_type = "Dropbox" if DROPBOX_ENABLED else "local file"
         logger.info(f"Database initialized using {storage_type} storage at {db_path}")
 
 def store_interactions(db_path: str, data: Dict[str, Any]) -> int:
@@ -289,7 +289,7 @@ def store_uploaded_model(
     
     # Upload to Dropbox if enabled
     dropbox_metadata = None
-    if GOOGLE_DRIVE_ENABLED and _dropbox_storage:
+    if DROPBOX_ENABLED and _dropbox_storage:
         try:
             model_name = f"model_upload_{device_id}_{model_id}.mlmodel"
             
@@ -406,7 +406,7 @@ def get_pending_uploaded_models(db_path: str) -> List[Dict[str, Any]]:
             models = [dict(row) for row in cursor.fetchall()]
             
             # If using Dropbox, resolve file paths as needed
-            if GOOGLE_DRIVE_ENABLED and _dropbox_storage:
+            if DROPBOX_ENABLED and _dropbox_storage:
                 for model in models:
                     if model['file_path'].startswith('dropbox:'):
                         try:
@@ -481,7 +481,7 @@ def get_model_stats(db_path: str) -> Dict[str, Any]:
                 stats['latest_training_date'] = latest[3]
                 
             # Add storage type information
-            stats['storage_type'] = "dropbox" if GOOGLE_DRIVE_ENABLED else "local"
+            stats['storage_type'] = "dropbox" if DROPBOX_ENABLED else "local"
             
             return stats
             
@@ -515,12 +515,22 @@ def store_model_version(
     """
     # Upload to Dropbox if enabled
     dropbox_path = None
-    if GOOGLE_DRIVE_ENABLED and _dropbox_storage and os.path.exists(path):
+    if DROPBOX_ENABLED and _dropbox_storage:
         try:
             model_name = f"model_{version}.mlmodel"
-            dropbox_metadata = _dropbox_storage.upload_model(path, model_name)
+            
+            # Check if path is a string (file path) or file-like object
+            if isinstance(path, str) and os.path.exists(path):
+                # Upload file from path
+                with open(path, 'rb') as f:
+                    model_data = f.read()
+                dropbox_metadata = _dropbox_storage.upload_model(model_data, model_name)
+            else:
+                # Try to upload directly (might be a file-like object)
+                dropbox_metadata = _dropbox_storage.upload_model(path, model_name)
+                
             if dropbox_metadata and dropbox_metadata.get('success'):
-                dropbox_path = f"dropbox:{dropbox_metadata['path']}:{path}"
+                dropbox_path = f"dropbox:{dropbox_metadata['path']}"
                 logger.info(f"Uploaded model version {version} to Dropbox: {dropbox_metadata['path']}")
         except Exception as e:
             logger.error(f"Failed to upload model to Dropbox: {e}")
@@ -570,7 +580,7 @@ def store_model_version(
 
 def get_model_path(db_path: str, version: str) -> Optional[str]:
     """
-    Get the path to a model file, resolving Google Drive paths if needed.
+    Get the path to a model file, resolving Dropbox paths if needed.
     
     Args:
         db_path: Path to the SQLite database
@@ -592,12 +602,17 @@ def get_model_path(db_path: str, version: str) -> Optional[str]:
             path = result[0]
             
             # Handle Dropbox paths
-            if GOOGLE_DRIVE_ENABLED and _dropbox_storage and path.startswith('dropbox:'):
+            if DROPBOX_ENABLED and _dropbox_storage and path.startswith('dropbox:'):
                 try:
                     parts = path.split(':')
                     if len(parts) >= 2:
                         dropbox_path = parts[1]
-                        model_name = f"model_{version}.mlmodel"
+                        
+                        # Get model name from path or use default format
+                        if version == '1.0.0':
+                            model_name = config.BASE_MODEL_NAME
+                        else:
+                            model_name = f"model_{version}.mlmodel"
                         
                         # Get streaming info from Dropbox
                         model_info = _dropbox_storage.get_model_stream(model_name)
@@ -616,7 +631,7 @@ def get_model_path(db_path: str, version: str) -> Optional[str]:
                 except Exception as e:
                     logger.error(f"Error resolving Dropbox model path: {e}")
             
-            # Return original path (either local or couldn't resolve Drive path)
+            # Return original path (either local or couldn't resolve Dropbox path)
             return path
             
         except Exception as e:

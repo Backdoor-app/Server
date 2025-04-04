@@ -52,6 +52,5 @@ DROPBOX_MODELS_SYNC_INTERVAL = int(os.getenv("DROPBOX_MODELS_SYNC_INTERVAL", "30
 # Storage Mode (dropbox or local)
 STORAGE_MODE = "dropbox" if DROPBOX_ENABLED else "local"
 
-# Base Model Dropbox URL
-# This is the direct download URL to the CoreML model
-BASE_MODEL_DROPBOX_URL = "https://www.dropbox.com/scl/fi/2xarhyii46tr9amkqh764/coreml_model.mlmodel?rlkey=j3cxmpjhxj8bbwzw11j1hy54c&st=ak8zbpxp&dl=1"
+# Base model name (used to identify the model in Dropbox/local storage)
+BASE_MODEL_NAME = "model_1.0.0.mlmodel"
