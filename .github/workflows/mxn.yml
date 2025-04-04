@@ -1,0 +1,58 @@
+name: Unzip .mlmodel and Create Release
+
+# Trigger the workflow manually or on a tag push (e.g., v1.0.0)
+on:
+  workflow_dispatch: # Allows manual triggering
+  push:
+    tags:
+      - 'v*' # Triggers on tags like v1.0, v1.2.3
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository, including LFS files
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true # Ensure Git LFS files are fetched
+
+      # Fetch all LFS files (just in case)
+      - name: Fetch LFS files
+        run: git lfs fetch --all
+
+      # Install unzip if not already present (usually pre-installed on ubuntu-latest)
+      - name: Install unzip
+        run: sudo apt-get update && sudo apt-get install -y unzip
+
+      # Unzip the .mlmodel file from the model folder
+      - name: Unzip the .mlmodel file
+        run: unzip model/coreml_model.mlmodel -d extracted_model # Update with the correct filename
+
+      # Zip the extracted contents into a new ZIP file
+      - name: Zip the extracted contents
+        run: zip -r model_contents.zip extracted_model
+
+      # Create a GitHub release
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Use GitHub token from secrets
+        with:
+          tag_name: ${{ github.ref_name }} # e.g., v1.0.0
+          release_name: Release ${{ github.ref_name }}
+          draft: false # Set to true if you want a draft release
+          prerelease: false # Set to true for prerelease
+
+      # Upload the new ZIP file as a release asset
+      - name: Upload ZIP to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Use GitHub token from secrets
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # From create_release step
+          asset_path: ./model_contents.zip
+          asset_name: model_contents.zip
+          asset_content_type: application/zip
