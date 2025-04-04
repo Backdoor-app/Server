@@ -53,4 +53,4 @@ GOOGLE_MODELS_SYNC_INTERVAL = int(os.getenv("GOOGLE_MODELS_SYNC_INTERVAL", "300"
 STORAGE_MODE = "google_drive" if GOOGLE_DRIVE_ENABLED else "local"
 # Base Model Google Drive File ID (Public link)
 # This is the file ID from the shared Google Drive link
-BASE_MODEL_DRIVE_FILE_ID = "1xrV5BoUqFppd6Wc-MANUJwOFzCvK4BXV"  # Provided by user - public link to CoreML model  # Replace with the actual file ID
+BASE_MODEL_DRIVE_FILE_ID = "1xrV5BoUqFppd6Wc-MANUJwOFzCvK4BXV"  # Provided by user - public link to CoreML model
