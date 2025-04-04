@@ -289,17 +289,29 @@ def store_uploaded_model(
     
     # Upload to Dropbox if enabled
     dropbox_metadata = None
-    if GOOGLE_DRIVE_ENABLED and _dropbox_storage and os.path.exists(file_path):
+    if GOOGLE_DRIVE_ENABLED and _dropbox_storage:
         try:
             model_name = f"model_upload_{device_id}_{model_id}.mlmodel"
-            dropbox_metadata = _dropbox_storage.upload_model(file_path, model_name)
+            
+            # If file_path is a local file, read and upload
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as f:
+                    model_data = f.read()
+                dropbox_metadata = _dropbox_storage.upload_model(model_data, model_name)
+            # If file_path is already a path reference
+            elif file_path.startswith('dropbox:') or file_path.startswith('memory:'):
+                # Already uploaded to Dropbox or in memory, no need to upload again
+                parts = file_path.split(':')
+                if len(parts) >= 2:
+                    dropbox_metadata = {'success': True, 'path': parts[1]}
+            
             if dropbox_metadata and dropbox_metadata.get('success'):
                 # Update file_path to include Dropbox path for reference
-                file_path = f"dropbox:{dropbox_metadata['path']}:{file_path}"
+                file_path = f"dropbox:{dropbox_metadata['path']}"
                 logger.info(f"Uploaded model to Dropbox: {dropbox_metadata['path']}")
         except Exception as e:
             logger.error(f"Failed to upload model to Dropbox: {e}")
-            # Continue with local reference only
+            # Continue with memory reference
     
     with get_connection(db_path) as conn:
         cursor = conn.cursor()
@@ -400,16 +412,20 @@ def get_pending_uploaded_models(db_path: str) -> List[Dict[str, Any]]:
                         try:
                             # Extract model name from path
                             parts = model['file_path'].split(':')
-                            if len(parts) >= 3:
+                            if len(parts) >= 2:
                                 dropbox_path = parts[1]
-                                original_path = ':'.join(parts[2:])
-                                model_name = os.path.basename(original_path)
+                                model_name = os.path.basename(dropbox_path)
                                 
-                                # Download from Dropbox
-                                download_info = _dropbox_storage.download_model(model_name)
-                                if download_info and download_info.get('success'):
-                                    # Update file_path to local path
-                                    model['file_path'] = download_info['local_path']
+                                # Get streaming info from Dropbox
+                                model_info = _dropbox_storage.get_model_stream(model_name)
+                                if model_info and model_info.get('success'):
+                                    # Update with download URL
+                                    model['download_url'] = model_info.get('download_url')
+                                    
+                                    # For backward compatibility, also download to memory if needed
+                                    memory_info = _dropbox_storage.download_model_to_memory(model_name)
+                                    if memory_info and memory_info.get('success'):
+                                        model['model_buffer'] = memory_info.get('model_buffer')
                         except Exception as e:
                             logger.error(f"Failed to resolve Dropbox model file: {e}")
                             # Keep original path, will need to be handled downstream
@@ -579,15 +595,21 @@ def get_model_path(db_path: str, version: str) -> Optional[str]:
             if GOOGLE_DRIVE_ENABLED and _dropbox_storage and path.startswith('dropbox:'):
                 try:
                     parts = path.split(':')
-                    if len(parts) >= 3:
+                    if len(parts) >= 2:
                         dropbox_path = parts[1]
-                        original_path = ':'.join(parts[2:])
                         model_name = f"model_{version}.mlmodel"
                         
-                        # Download from Dropbox
-                        download_info = _dropbox_storage.download_model(model_name)
-                        if download_info and download_info.get('success'):
-                            return download_info['local_path']
+                        # Get streaming info from Dropbox
+                        model_info = _dropbox_storage.get_model_stream(model_name)
+                        if model_info and model_info.get('success'):
+                            # Return streaming URL - stream endpoint will handle the redirect
+                            return f"stream:{model_info.get('download_url')}"
+                            
+                        # Fallback to downloading to memory
+                        memory_info = _dropbox_storage.download_model_to_memory(model_name)
+                        if memory_info and memory_info.get('success'):
+                            # Return memory buffer identifier - app will get it from the storage module
+                            return f"memory:{model_name}"
                         else:
                             logger.error(f"Failed to download model {version} from Dropbox")
                             # Fall back to original path, might not exist locally

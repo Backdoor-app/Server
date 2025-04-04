@@ -4,7 +4,7 @@ Learning package for the Backdoor AI application.
 This package contains modules for:
 - Text preprocessing (preprocessor.py)
 - Intent classification (intent_classifier.py)
-- Model training and evaluation (trainer.py)
+- Model training and evaluation (trainer.py and trainer_dropbox.py)
 """
 
 from .preprocessor import preprocess_text, extract_features, ensure_nltk_resources
@@ -16,6 +16,7 @@ from .trainer import (
     get_current_model_version,
     clean_old_models
 )
+from .trainer_dropbox import clean_old_models_dropbox
 
 __all__ = [
     # Preprocessor
@@ -31,5 +32,6 @@ __all__ = [
     'trigger_retraining',
     'train_new_model',
     'get_current_model_version',
-    'clean_old_models'
+    'clean_old_models',
+    'clean_old_models_dropbox'
 ]
