@@ -28,7 +28,7 @@ import config
 import sys  # Required for sys.exit in scheduler
 
 # Import from packages
-from utils import init_db, store_interactions, store_uploaded_model
+from utils.db_helpers import init_db, store_interactions, store_uploaded_model
 from learning import (
     ensure_nltk_resources, 
     IntentClassifier,
