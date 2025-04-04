@@ -609,13 +609,7 @@ def api_documentation():
                 margin: 15px 0;
             }
             
-            .auth-info {
-                margin-top: 15px;
-                padding: 10px;
-                background-color: #fffbeb;
-                border-left: 4px solid #f59e0b;
-                border-radius: 4px;
-            }
+            /* Removed auth-info styles as authentication is no longer required */
             
             .request-example, .response-example {
                 margin-top: 15px;
