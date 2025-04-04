@@ -2,7 +2,7 @@ flask==2.3.3
 flask-cors==4.0.1
 schedule==1.2.2
 pandas==2.0.3
-scikit-learn==1.5.1
+scikit-learn==1.1.2  # Downgraded for compatibility with coremltools
 joblib==1.4.2
 coremltools==7.0  # Newer version, less likely to need apt
 numpy==1.26.4
