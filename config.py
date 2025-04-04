@@ -51,3 +51,6 @@ GOOGLE_MODELS_SYNC_INTERVAL = int(os.getenv("GOOGLE_MODELS_SYNC_INTERVAL", "300"
 
 # Storage Mode (google_drive or local)
 STORAGE_MODE = "google_drive" if GOOGLE_DRIVE_ENABLED else "local"
+# Base Model Google Drive File ID (Public link)
+# This is the file ID from the shared Google Drive link
+BASE_MODEL_DRIVE_FILE_ID = "1Qsp4E77s1Z5bdFZCIBkwxTuRUpC0kuzR"  # Replace with the actual file ID

@@ -108,6 +108,17 @@ if config.GOOGLE_DRIVE_ENABLED:
 # Initialize database on startup
 init_db(config.DB_PATH)
 
+import utils.model_download
+
+# Ensure the base model is available
+try:
+    base_model_available = utils.model_download.ensure_base_model()
+    if base_model_available:
+        logger.info("Base model is available for use")
+    else:
+        logger.warning("Base model is not available - will need to be downloaded later")
+except Exception as e:
+    logger.error(f"Error checking base model: {e}")
 # =============================================================================
 # API Endpoints
 # =============================================================================
