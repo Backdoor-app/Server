@@ -1,5 +1,5 @@
 """
-Utility for downloading the base model from a public Google Drive link.
+Utility for downloading the base model from Dropbox.
 
 This module provides functionality to:
 - Download and verify the base model file
@@ -18,29 +18,27 @@ import config
 
 logger = logging.getLogger(__name__)
 
-# Public Google Drive direct download helper
-def get_direct_download_url(file_id):
+def download_file_from_dropbox(url, destination):
     """
-    Convert a Google Drive file ID to a direct download URL
-    """
-    return f"https://drive.google.com/uc?export=download&id={file_id}"
-
-def download_file_from_drive(file_id, destination):
-    """
-    Download a file from Google Drive using a public file ID
+    Download a file from Dropbox using a direct download URL
     
     Args:
-        file_id: Google Drive file ID
+        url: Dropbox direct download URL
         destination: Local path where the file should be saved
         
     Returns:
         bool: True if download successful, False otherwise
     """
-    url = get_direct_download_url(file_id)
+    # Ensure the URL is a direct download link
+    if '?dl=0' in url:
+        url = url.replace('?dl=0', '?dl=1')
+    elif '?dl=' not in url:
+        url = url + '?dl=1'
+    
     temp_file = tempfile.NamedTemporaryFile(delete=False).name
     
     try:
-        logger.info(f"Downloading base model from Google Drive (file_id: {file_id})")
+        logger.info(f"Downloading base model from Dropbox")
         # Start streaming download
         with requests.get(url, stream=True, timeout=60) as r:
             r.raise_for_status()
@@ -94,14 +92,14 @@ def ensure_base_model():
         logger.info(f"Base model already exists at {model_path}")
         return True
     
-    # Check if we have a file ID to download from
-    if not hasattr(config, 'BASE_MODEL_DRIVE_FILE_ID') or not config.BASE_MODEL_DRIVE_FILE_ID:
-        logger.warning("No Google Drive file ID defined for base model. Set BASE_MODEL_DRIVE_FILE_ID in config.")
+    # Check if we have a Dropbox URL to download from
+    if not hasattr(config, 'BASE_MODEL_DROPBOX_URL') or not config.BASE_MODEL_DROPBOX_URL:
+        logger.warning("No Dropbox URL defined for base model. Set BASE_MODEL_DROPBOX_URL in config.")
         return False
     
     # Download the model
-    download_success = download_file_from_drive(
-        config.BASE_MODEL_DRIVE_FILE_ID, 
+    download_success = download_file_from_dropbox(
+        config.BASE_MODEL_DROPBOX_URL, 
         model_path
     )
     

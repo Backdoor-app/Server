@@ -82,27 +82,29 @@ ensure_nltk_resources()
 app = Flask(__name__)
 CORS(app)
 
-# Check if Google Drive integration is enabled
-if config.GOOGLE_DRIVE_ENABLED:
+# Check if Dropbox integration is enabled
+if config.DROPBOX_ENABLED:
     try:
-        # Import Google Drive storage module
-        from utils.drive_storage import init_drive_storage, get_drive_storage
+        # Import Dropbox storage module
+        from utils.dropbox_storage import init_dropbox_storage, get_dropbox_storage
         
-        # Initialize Google Drive storage with credentials
-        drive_storage = init_drive_storage(
-            config.GOOGLE_CREDENTIALS_PATH,
-            config.GOOGLE_DB_FILENAME,
-            config.GOOGLE_MODELS_FOLDER
+        # Initialize Dropbox storage with API key
+        dropbox_storage = init_dropbox_storage(
+            config.DROPBOX_API_KEY,
+            config.DROPBOX_DB_FILENAME,
+            config.DROPBOX_MODELS_FOLDER
         )
         
-        logger.info(f"Google Drive storage initialized successfully")
-        logger.info(f"Using database: {config.GOOGLE_DB_FILENAME}")
-        logger.info(f"Using models folder: {config.GOOGLE_MODELS_FOLDER}")
+        logger.info(f"Dropbox storage initialized successfully")
+        logger.info(f"Using database: {config.DROPBOX_DB_FILENAME}")
+        logger.info(f"Using models folder: {config.DROPBOX_MODELS_FOLDER}")
         
     except Exception as e:
-        logger.error(f"Failed to initialize Google Drive storage: {e}")
+        logger.error(f"Failed to initialize Dropbox storage: {e}")
         logger.warning("Falling back to local storage")
-        # Disable Google Drive mode
+        # Disable Dropbox mode
+        config.DROPBOX_ENABLED = False
+        # Also update the compatibility variable
         config.GOOGLE_DRIVE_ENABLED = False
 
 # Initialize database on startup
@@ -252,20 +254,20 @@ def get_model(version):
             logger.error(f"Error sending model file: {e}")
             return jsonify({'success': False, 'message': f'Error retrieving model: {e}'}), 500
     else:
-        # If using Google Drive, try one more method - direct download
-        if config.GOOGLE_DRIVE_ENABLED:
+        # If using Dropbox, try one more method - direct download
+        if config.DROPBOX_ENABLED:
             try:
-                from utils.drive_storage import get_drive_storage
-                drive_storage = get_drive_storage()
+                from utils.dropbox_storage import get_dropbox_storage
+                dropbox_storage = get_dropbox_storage()
                 model_name = f"model_{version}.mlmodel"
-                download_info = drive_storage.download_model(model_name)
+                download_info = dropbox_storage.download_model(model_name)
                 
                 if download_info and download_info.get('success'):
                     local_path = download_info['local_path']
-                    logger.info(f"Serving model version {version} from Google Drive")
+                    logger.info(f"Serving model version {version} from Dropbox")
                     return send_file(local_path, mimetype='application/octet-stream')
             except Exception as e:
-                logger.error(f"Error retrieving model from Google Drive: {e}")
+                logger.error(f"Error retrieving model from Dropbox: {e}")
         
         logger.warning(f"Model version {version} not found")
         return jsonify({'success': False, 'message': 'Model not found'}), 404

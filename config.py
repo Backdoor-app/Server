@@ -39,18 +39,19 @@ DB_LOCK_TIMEOUT = 60
 # Model naming
 MODEL_VERSION_PREFIX = "1.0."  # Base prefix for model versions
 
-# Google Drive Integration Settings
-GOOGLE_DRIVE_ENABLED = os.getenv("GOOGLE_DRIVE_ENABLED", "True").lower() in ["true", "1", "yes"]
-GOOGLE_CREDENTIALS_PATH = os.getenv("GOOGLE_CREDENTIALS_PATH", os.path.join(BASE_DIR, "google_credentials.json"))
-GOOGLE_DB_FILENAME = os.getenv("GOOGLE_DB_FILENAME", "backdoor_ai_db.db")
-GOOGLE_MODELS_FOLDER = os.getenv("GOOGLE_MODELS_FOLDER", "backdoor_models")
+# Dropbox Integration Settings
+DROPBOX_ENABLED = os.getenv("DROPBOX_ENABLED", "True").lower() in ["true", "1", "yes"]
+DROPBOX_API_KEY = os.getenv("DROPBOX_API_KEY", "sl.u.AFr644NtvwSXMgahi8lLvhJKeiMS4Vmk3nq0AlYjiagi0iLUZHbkWfUM2ITVdu5840l2olzscEivBNt5ps43j0")
+DROPBOX_DB_FILENAME = os.getenv("DROPBOX_DB_FILENAME", "backdoor_ai_db.db")
+DROPBOX_MODELS_FOLDER = os.getenv("DROPBOX_MODELS_FOLDER", "backdoor_models")
 
-# Google Drive Sync Settings
-GOOGLE_DB_SYNC_INTERVAL = int(os.getenv("GOOGLE_DB_SYNC_INTERVAL", "60"))  # Seconds
-GOOGLE_MODELS_SYNC_INTERVAL = int(os.getenv("GOOGLE_MODELS_SYNC_INTERVAL", "300"))  # Seconds
+# Dropbox Sync Settings
+DROPBOX_DB_SYNC_INTERVAL = int(os.getenv("DROPBOX_DB_SYNC_INTERVAL", "60"))  # Seconds
+DROPBOX_MODELS_SYNC_INTERVAL = int(os.getenv("DROPBOX_MODELS_SYNC_INTERVAL", "300"))  # Seconds
 
-# Storage Mode (google_drive or local)
-STORAGE_MODE = "google_drive" if GOOGLE_DRIVE_ENABLED else "local"
-# Base Model Google Drive File ID (Public link)
-# This is the file ID from the shared Google Drive link
-BASE_MODEL_DRIVE_FILE_ID = "1xrV5BoUqFppd6Wc-MANUJwOFzCvK4BXV"  # Provided by user - public link to CoreML model
+# Storage Mode (dropbox or local)
+STORAGE_MODE = "dropbox" if DROPBOX_ENABLED else "local"
+
+# Base Model Dropbox URL
+# This is the direct download URL to the CoreML model
+BASE_MODEL_DROPBOX_URL = "https://www.dropbox.com/scl/fi/2xarhyii46tr9amkqh764/coreml_model.mlmodel?rlkey=j3cxmpjhxj8bbwzw11j1hy54c&st=ak8zbpxp&dl=1"
