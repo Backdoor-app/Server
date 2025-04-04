@@ -1,0 +1,52 @@
+name: Keep Render Servers Alive
+
+on:
+  schedule:
+    # Runs every 5 minutes
+    - cron: '*/5 * * * *'
+  # Allows manual triggering from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  ping-servers:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Ping Terminal Server
+        run: |
+          echo "Pinging Terminal Server..."
+          curl -s -o response.txt -w "%{http_code}" https://terminal-server-tqo6.onrender.com/ > status.txt
+          STATUS=$(cat status.txt)
+          echo "Status: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Warning: Non-200 response ($STATUS) from Terminal Server"
+          fi
+          echo "-------------------"
+          
+      - name: Ping Backdoor AI Server
+        run: |
+          echo "Pinging Backdoor AI Server..."
+          curl -s -o response.txt -w "%{http_code}" https://backdoor-ai-b3k3.onrender.com/health > status.txt
+          STATUS=$(cat status.txt)
+          echo "Status: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Warning: Non-200 response ($STATUS) from Backdoor AI Server"
+          fi
+          echo "-------------------"
+          
+      - name: Ping Database Server
+        run: |
+          echo "Pinging Database Server..."
+          curl -s -o response.txt -w "%{http_code}" https://database-iupv.onrender.com/ > status.txt
+          STATUS=$(cat status.txt)
+          echo "Status: $STATUS"
+          if [ "$STATUS" -ne 200 ]; then
+            echo "Warning: Non-200 response ($STATUS) from Database Server"
+          fi
+          echo "-------------------"
+          
+      - name: Check for Failures
+        if: failure()
+        run: |
+          echo "One or more pings failed or servers returned errors!"
+          # Add notification logic here (e.g., Slack, email) if desired
