@@ -3,6 +3,8 @@ Utility package for the Backdoor AI server.
 
 This package contains helper modules for:
 - Database operations (db_helpers.py)
+- Google Drive storage integration (drive_storage.py)
+- Model downloading utilities (model_download.py)
 - Other utility functions
 """
 
