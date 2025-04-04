@@ -8,7 +8,7 @@ This module contains the main Flask application and API endpoints for:
 - Collecting application statistics
 """
 
-from flask import Flask, request, jsonify, send_file, render_template_string
+from flask import Flask, request, jsonify, send_file, render_template_string, redirect
 from flask_cors import CORS
 import os
 import json
@@ -21,7 +21,7 @@ from datetime import datetime
 import logging
 import subprocess
 import nltk
-import stat  # For permission debugging
+import tempfile  # For temporary directory management
 
 # Import configuration
 import config
@@ -53,27 +53,14 @@ logger = logging.getLogger(__name__)
 # Create a thread lock for database operations
 db_lock = threading.RLock()
 
-# Ensure directories exist
-os.makedirs(os.path.dirname(config.DB_PATH), exist_ok=True)
-os.makedirs(config.MODEL_DIR, exist_ok=True)
-os.makedirs(config.UPLOADED_MODELS_DIR, exist_ok=True)
-os.makedirs(config.NLTK_DATA_PATH, exist_ok=True)
+# Create temporary directory for NLTK data
+temp_nltk_dir = tempfile.mkdtemp()
+nltk.data.path.append(temp_nltk_dir)
 
-# Debug: Check permissions of the base directory
-def check_permissions(path):
-    """Check file permissions for a given path."""
-    try:
-        stats = os.stat(path)
-        permissions = stat.filemode(stats.st_mode)
-        logger.info(f"Permissions for {path}: {permissions}")
-    except Exception as e:
-        logger.error(f"Cannot check permissions for {path}: {e}")
+logger.info("Operating in memory-only mode with Dropbox storage - no local directories needed")
 
-# Check permissions on startup
-check_permissions(config.BASE_DIR)
-
-# Set NLTK data path to persistent disk
-nltk.data.path.append(config.NLTK_DATA_PATH)
+# This section has been removed as we're not using local directories anymore
+# NLTK uses temporary directory configured above
 
 # Ensure NLTK resources are available
 ensure_nltk_resources()
@@ -162,6 +149,7 @@ def upload_model():
     API endpoint for uploading user-trained CoreML models.
     
     These models will be incorporated into an ensemble model on the server.
+    Uploads directly to Dropbox without creating local files.
     """
     try:
         # Check if file is included in the request
@@ -186,11 +174,23 @@ def upload_model():
         # Generate a unique filename
         timestamp = int(datetime.now().timestamp())
         unique_filename = f"model_upload_{device_id}_{timestamp}.mlmodel"
-        file_path = os.path.join(config.UPLOADED_MODELS_DIR, unique_filename)
         
-        # Save the uploaded model
-        model_file.save(file_path)
-        logger.info(f"Saved uploaded model from device {device_id} to {file_path}")
+        # Get Dropbox storage
+        from utils.dropbox_storage import get_dropbox_storage
+        dropbox_storage = get_dropbox_storage()
+        
+        # Read the file content directly to memory and upload to Dropbox
+        model_data = model_file.read()
+        file_size = len(model_data)
+        
+        # Upload directly to Dropbox
+        upload_result = dropbox_storage.upload_model(model_data, unique_filename)
+        
+        if not upload_result.get('success', False):
+            return jsonify({'success': False, 'message': f"Error uploading to Dropbox: {upload_result.get('error', 'Unknown error')}"}), 500
+        
+        # Get the Dropbox path for reference
+        dropbox_path = upload_result.get('path', '')
         
         # Store model metadata in database with lock
         with db_lock:
@@ -199,8 +199,8 @@ def upload_model():
                 device_id=device_id,
                 app_version=app_version,
                 description=description,
-                file_path=file_path,
-                file_size=os.path.getsize(file_path),
+                file_path=f"dropbox:{dropbox_path}",  # Store the Dropbox path as reference
+                file_size=file_size,
                 original_filename=model_file.filename
             )
         
@@ -236,41 +236,97 @@ def get_model(version):
     """
     API endpoint for downloading a specific model version.
     
-    Supports both local and Google Drive storage.
+    Streams directly from Dropbox without creating local files.
     """
-    # First try to get model path from database (handles Google Drive paths)
-    from utils.db_helpers import get_model_path
-    model_path = get_model_path(config.DB_PATH, version)
-    
-    # If not found in database, try traditional path
-    if not model_path:
-        model_path = os.path.join(config.MODEL_DIR, f"model_{version}.mlmodel")
-    
-    if os.path.exists(model_path):
-        logger.info(f"Serving model version {version} from {model_path}")
-        try:
-            return send_file(model_path, mimetype='application/octet-stream')
-        except Exception as e:
-            logger.error(f"Error sending model file: {e}")
-            return jsonify({'success': False, 'message': f'Error retrieving model: {e}'}), 500
-    else:
-        # If using Dropbox, try one more method - direct download
+    try:
+        # If this is the base model version, serve from memory cache
+        if version == '1.0.0':
+            from utils.model_download import get_base_model_buffer
+            model_buffer = get_base_model_buffer()
+            
+            if model_buffer:
+                logger.info(f"Serving base model version {version} from memory")
+                model_buffer.seek(0)  # Ensure we're at the beginning of the buffer
+                return send_file(
+                    model_buffer,
+                    mimetype='application/octet-stream',
+                    as_attachment=True,
+                    download_name=f"model_{version}.mlmodel"
+                )
+        
+        # For other versions, get streaming URL from Dropbox
         if config.DROPBOX_ENABLED:
             try:
                 from utils.dropbox_storage import get_dropbox_storage
                 dropbox_storage = get_dropbox_storage()
                 model_name = f"model_{version}.mlmodel"
-                download_info = dropbox_storage.download_model(model_name)
                 
-                if download_info and download_info.get('success'):
-                    local_path = download_info['local_path']
-                    logger.info(f"Serving model version {version} from Dropbox")
-                    return send_file(local_path, mimetype='application/octet-stream')
+                # Get model information (including direct download URL)
+                model_info = dropbox_storage.get_model_stream(model_name)
+                
+                if model_info and model_info.get('success'):
+                    download_url = model_info.get('download_url')
+                    
+                    if download_url:
+                        # Redirect to the direct download URL
+                        logger.info(f"Redirecting to Dropbox direct download for model {version}")
+                        return redirect(download_url)
+                    
+                    # If we couldn't get a direct URL, try downloading to memory and serving
+                    memory_download = dropbox_storage.download_model_to_memory(model_name)
+                    if memory_download and memory_download.get('success'):
+                        logger.info(f"Serving model version {version} from memory buffer")
+                        model_buffer = memory_download.get('model_buffer')
+                        model_buffer.seek(0)
+                        return send_file(
+                            model_buffer,
+                            mimetype='application/octet-stream',
+                            as_attachment=True,
+                            download_name=f"model_{version}.mlmodel"
+                        )
             except Exception as e:
                 logger.error(f"Error retrieving model from Dropbox: {e}")
         
+        # Check if model_path is a stream or memory reference from get_model_path
+        from utils.db_helpers import get_model_path
+        model_path = get_model_path(config.DB_PATH, version)
+        
+        if model_path:
+            # Handle stream URL references
+            if model_path.startswith('stream:'):
+                stream_url = model_path.split(':', 1)[1]
+                logger.info(f"Redirecting to stream URL for model {version}")
+                return redirect(stream_url)
+                
+            # Handle memory buffer references
+            elif model_path.startswith('memory:'):
+                model_name = model_path.split(':', 1)[1]
+                from utils.dropbox_storage import get_dropbox_storage
+                dropbox_storage = get_dropbox_storage()
+                memory_info = dropbox_storage.download_model_to_memory(model_name)
+                
+                if memory_info and memory_info.get('success'):
+                    logger.info(f"Serving model version {version} from memory")
+                    model_buffer = memory_info.get('model_buffer')
+                    model_buffer.seek(0)
+                    return send_file(
+                        model_buffer,
+                        mimetype='application/octet-stream',
+                        as_attachment=True,
+                        download_name=f"model_{version}.mlmodel"
+                    )
+            
+            # For legacy support, check if it's a local path
+            elif os.path.exists(model_path):
+                logger.info(f"Serving model version {version} from local path {model_path}")
+                return send_file(model_path, mimetype='application/octet-stream')
+                
         logger.warning(f"Model version {version} not found")
         return jsonify({'success': False, 'message': 'Model not found'}), 404
+        
+    except Exception as e:
+        logger.error(f"Error in get_model: {e}")
+        return jsonify({'success': False, 'message': f'Error: {e}'}), 500
 
 @app.route('/api/ai/latest-model', methods=['GET'])
 def latest_model():
@@ -353,39 +409,47 @@ def get_latest_model_info():
     """
     Get information about the latest model version.
     
+    Uses database to get info with fallback to default values.
+    No local file storage used.
+    
     Returns:
         dict: Model information
     """
-    info_path = os.path.join(config.MODEL_DIR, "latest_model.json")
     try:
-        if not os.path.exists(info_path):
-            # Create default model info if none exists
-            default_info = {
-                'version': '1.0.0',
-                'path': os.path.join(config.MODEL_DIR, 'model_1.0.0.mlmodel'),
-                'training_date': datetime.now().isoformat(),
-                'accuracy': 0.0,
-                'training_data_size': 0,
-                'is_ensemble': False
-            }
-            # Ensure the directory exists
-            os.makedirs(os.path.dirname(info_path), exist_ok=True)
-            with open(info_path, 'w') as f:
-                json.dump(default_info, f)
-            return default_info
+        # Try to get model info from database
+        from utils.db_helpers import get_connection
+        with get_connection(config.DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT version, path, accuracy, training_data_size, training_date 
+                FROM model_versions 
+                ORDER BY created_at DESC LIMIT 1
+            """)
+            result = cursor.fetchone()
             
-        with open(info_path, 'r') as f:
-            return json.load(f)
+            if result:
+                return {
+                    'version': result[0],
+                    'path': result[1],
+                    'accuracy': result[2],
+                    'training_data_size': result[3],
+                    'training_date': result[4],
+                    'is_ensemble': False  # Default, could be updated from ensemble_models table
+                }
     except Exception as e:
-        logger.error(f"Error accessing model info: {e}")
-        # Return a fallback if file access fails
-        return {
-            'version': '1.0.0',
-            'path': os.path.join(config.MODEL_DIR, 'model_1.0.0.mlmodel'),
-            'training_date': datetime.now().isoformat(),
-            'accuracy': 0.0,
-            'is_ensemble': False
-        }
+        logger.error(f"Error getting latest model from database: {e}")
+    
+    # If database query fails or no models found, return default info
+    default_info = {
+        'version': '1.0.0',
+        'path': 'dropbox:/model_1.0.0.mlmodel',  # Reference to Dropbox path
+        'training_date': datetime.now().isoformat(),
+        'accuracy': 0.0,
+        'training_data_size': 0,
+        'is_ensemble': False
+    }
+    
+    return default_info
 
 def train_model_job():
     """
@@ -399,8 +463,8 @@ def train_model_job():
             with db_lock:
                 new_version = train_new_model(config.DB_PATH)
             
-            # Clean up old models to save disk space
-            clean_old_models(config.MODEL_DIR, config.MAX_MODELS_TO_KEEP)
+            # Clean up old models to save space in Dropbox
+            clean_old_models_dropbox(config.MAX_MODELS_TO_KEEP)
             
             logger.info(f"Model training completed. New version: {new_version}")
         else:
@@ -411,21 +475,15 @@ def train_model_job():
 def run_scheduler():
     """
     Run the scheduler for periodic tasks.
+    
+    Note: Signal handling moved to main thread to prevent errors.
     """
-    # Configure graceful shutdown
-    def shutdown_handler(signum, frame):
-        logger.info("Received shutdown signal, exiting scheduler")
-        sys.exit(0)
-        
-    # Register signal handlers
-    signal.signal(signal.SIGTERM, shutdown_handler)
-    signal.signal(signal.SIGINT, shutdown_handler)
     
     # Schedule the training job
     schedule.every().day.at("02:00").do(train_model_job)
     
-    # Add periodic model cleanup
-    schedule.every().week.do(lambda: clean_old_models(config.MODEL_DIR, config.MAX_MODELS_TO_KEEP))
+    # Add periodic model cleanup from Dropbox
+    schedule.every().week.do(lambda: clean_old_models_dropbox(config.MAX_MODELS_TO_KEEP))
     
     logger.info("Scheduler started")
     
@@ -441,6 +499,18 @@ def run_scheduler():
 # Start the scheduler in a daemon thread
 scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
 scheduler_thread.start()
+
+# Register signal handlers in the main thread only when running as a script
+# This avoids issues with signal handlers in threads
+if __name__ == '__main__':
+    def shutdown_handler(signum, frame):
+        logger.info("Received shutdown signal, exiting application")
+        sys.exit(0)
+        
+    # Register signal handlers in the main thread
+    signal.signal(signal.SIGTERM, shutdown_handler)
+    signal.signal(signal.SIGINT, shutdown_handler)
+    logger.info("Signal handlers registered in main thread")
 
 @app.route('/health', methods=['GET'])
 def health_check():
