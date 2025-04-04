@@ -13,7 +13,7 @@ jobs:
       
     - name: Download ZIP file
       run: |
-        curl -L -o Main-app-main.zip "https://github.com/Backdoor-app/Main-app/archive/refs/heads/main.zip.zip"
+        curl -L -o Main-app-main.zip "https://github.com/Backdoor-app/Main-app/archive/refs/heads/main.zip"
         
     - name: Unzip the file
       run: |
@@ -34,5 +34,5 @@ jobs:
         title: "Sync Backdoor-App files from source repo"
         body: |
           This PR synchronizes the Backdoor-App files from the source repository.
-          Changes include downloading and extracting the latest ZIP from Backdoor-v5 repo.
+          Changes include downloading and extracting the latest ZIP from Backdoor-app repo.
         labels: "automated pr"
