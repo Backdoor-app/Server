@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23507" systemVersion="24B91" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="Certificate" representedClassName="Certificate" syncable="YES" codeGenerationType="class">
+        <attribute name="certPath" optional="YES" attributeType="String"/>
+        <attribute name="dateAdded" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="keyPath" optional="YES" attributeType="String"/>
+        <attribute name="p12Path" optional="YES" attributeType="String"/>
+        <attribute name="password" optional="YES" attributeType="String" defaultValueString=""/>
+        <attribute name="provisionPath" attributeType="String"/>
+        <attribute name="uuid" attributeType="String"/>
+        <relationship name="certData" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="CertificateData" inverseName="certificate" inverseEntity="CertificateData"/>
+    </entity>
+    <entity name="CertificateData" representedClassName="CertificateData" syncable="YES" codeGenerationType="class">
+        <attribute name="appIDName" attributeType="String"/>
+        <attribute name="creationDate" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="expirationDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="isXcodeManaged" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="pPQCheck" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="teamName" attributeType="String"/>
+        <attribute name="uuid" attributeType="String"/>
+        <attribute name="version" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="certificate" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Certificate" inverseName="certData" inverseEntity="Certificate"/>
+    </entity>
+    <entity name="DownloadedApps" representedClassName="DownloadedApps" syncable="YES" codeGenerationType="class">
+        <attribute name="appPath" attributeType="String"/>
+        <attribute name="bundleidentifier" attributeType="String"/>
+        <attribute name="dateAdded" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="directory" optional="YES" attributeType="String" defaultValueString="Unsigned"/>
+        <attribute name="iconURL" optional="YES" attributeType="String"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="originalSourceURL" optional="YES" attributeType="URI"/>
+        <attribute name="oSU" optional="YES" attributeType="String" defaultValueString="Imported"/>
+        <attribute name="uuid" attributeType="String"/>
+        <attribute name="version" attributeType="String"/>
+    </entity>
+    <entity name="SignedApps" representedClassName="SignedApps" syncable="YES" codeGenerationType="class">
+        <attribute name="appPath" attributeType="String"/>
+        <attribute name="bundleidentifier" attributeType="String"/>
+        <attribute name="dateAdded" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="directory" optional="YES" attributeType="String" defaultValueString="Signed"/>
+        <attribute name="hasUpdate" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="iconURL" optional="YES" attributeType="String"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="originalSourceURL" optional="YES" attributeType="URI"/>
+        <attribute name="teamName" optional="YES" attributeType="String"/>
+        <attribute name="timeToLive" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="updateVersion" optional="YES" attributeType="String"/>
+        <attribute name="uuid" attributeType="String"/>
+        <attribute name="version" attributeType="String"/>
+    </entity>
+    <entity name="Source" representedClassName="Source" syncable="YES" codeGenerationType="class">
+        <attribute name="iconURL" optional="YES" attributeType="URI"/>
+        <attribute name="identifier" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="sourceURL" attributeType="URI"/>
+    </entity>
+</model>

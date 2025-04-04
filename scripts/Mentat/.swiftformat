@@ -1,0 +1,11 @@
+# SwiftFormat configuration for consistent Swift code formatting
+--indent 4              # 4-space indentation
+--indentcase true       # Indent switch case statements
+--trimwhitespace always # Always trim trailing whitespace
+--importgrouping alphabetized # Alphabetize import statements
+--semicolons never      # Remove semicolons
+--header strip          # Remove file headers
+--disable redundantSelf # Disable redundant self rule
+--swiftversion 5.9      # Target Swift version
+--wraparguments beforefirst # Wrap arguments before first parameter
+--wrapparameters beforefirst # Wrap parameters before first parameter

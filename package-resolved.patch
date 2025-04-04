@@ -1,0 +1,18 @@
+--- Package.resolved.orig
++++ Package.resolved
+@@ -85,6 +85,14 @@
+       }
+     },
+     {
++      "identity" : "ssnaturallanguage",
++      "kind" : "remoteSourceControl",
++      "location" : "https://github.com/SimformSolutionsPvtLtd/SSNaturalLanguage.git",
++      "state" : {
++        "revision" : "fc7255a2358eef3440fc22670d545904642bd0c6",
++        "version" : "1.0.0"
++      }
++    },
++    {
+       "identity" : "swcompression",
+       "kind" : "remoteSourceControl",
+       "location" : "https://github.com/tsolomko/SWCompression.git",

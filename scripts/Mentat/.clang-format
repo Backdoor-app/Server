@@ -1,0 +1,13 @@
+# Clang-Format configuration for C/C++/Objective-C code
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+IndentCaseLabels: true
+AccessModifierOffset: -4
+PointerAlignment: Left
+NamespaceIndentation: All
+BreakBeforeBraces: Allman

@@ -1,0 +1,7 @@
+--indent 4
+--indentcase true
+--trimwhitespace always
+--importgrouping alphabetized
+--semicolons never
+--header strip
+--disable redundantSelf

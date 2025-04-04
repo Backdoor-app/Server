@@ -1,0 +1,421 @@
+/* 
+  Localizable.strings
+  feather
+
+  Created by samara on 25.08.2024.
+  
+*/
+
+// MARK: - Generic
+// Unknown, default string for applications
+"UNKNOWN" = "Неизвестно";
+// Default string
+"DEFAULT" = "По умолчанию";
+// Copy provided string in a menu
+"COPY" = "Копировать";
+// Delete item
+"DELETE" = "Удалить";
+// Cancel alert action
+"CANCEL" = "Отменить";
+// Done action
+"DONE" = "Готово";
+// Dismiss action
+"DISMISS" = "Закрыть";
+// Dismiss 2 action
+"LAME" = "ОК";
+// Save action
+"SAVE" = "Сохранить";
+// Set action
+"SET" = "Установить";
+// OK action
+"OK" = "ОК";
+// Continue action
+"CONTINUE" = "Продолжить";
+// Import Action
+"IMPORT" = "Импортировать";
+// Add Action
+"ADD" = "Добавить";
+// Install Action
+"INSTALL" = "Установить";
+
+// MARK: - Alerts
+// Alert titles
+"ALERT_SUCCESS" = "Успешно";
+"ALERT_TRACE" = "Отслеживание";
+"ALERT_ERROR" = "Ошибка";
+"ALERT_CRITICAL" = "Критическая ошибка";
+"ALERT_COPIED" = "Скопировано";
+
+// MARK: - Error messages
+// Installer Error Title
+"ERROR_INSTALLER" = "Установщик";
+// Installer Error Description
+"ERROR_INSTALLER_DESCRIPTION" = "Не удалось загрузить SSL-сертификаты";
+"ERROR_ZSIGN_FAILED" = "Не удалось подписать.";
+"ERROR_FAILED_TO_READ_MOBILEPROVISION" = "Не удалось прочитать файл mobileprovision";
+
+// MARK: - Success messages
+// Successfully signed an application
+"SUCCESS_SIGNED" = "Успешно подписано %@";
+// Successfully resigned an application
+"SUCCESS_RESIGN" = "Успешно переписано!";
+// Success message requiring user to restart app
+"SUCCESS_REQUIRES_RESTART" = "Вы должны закрыть приложение, чтобы изменения вступили в силу.";
+
+// MARK: - Onboarding
+// Welcome to Feather!!!!!!!!
+"ONBOARDING_WELCOMETITLE_1" = "Добро пожаловать в";
+// First feature inside of onboarding
+"ONBOARDING_CELL_1_TITLE" = "Установка приложений из интернета";
+"ONBOARDING_CELL_1_DESCRIPTION" = "Устанавливайте приложения из интернета без компьютера.";
+// Second feature inside of onboarding
+"ONBOARDING_CELL_2_TITLE" = "Настраивайте приложения";
+"ONBOARDING_CELL_2_DESCRIPTION" = "Управляйте приложениями и настраивайте их под свои нужды.";
+// Third feature inside of onboarding
+"ONBOARDING_CELL_3_TITLE" = "И многое другое!";
+"ONBOARDING_CELL_3_DESCRIPTION" = "AltStore репозитории, импорт IPA файлов, простое переключение сертификатов, и многое другое.";
+// "Developed by Samara. Made for users who are passionate for sideloading and freedom. Many features included inside. Learn more..."
+"ONBOARDING_FOOTER" = "Разработан Самарой. Создан для пользователей, которые любят установку из интернета и свободу. Внутри множество функций.";
+"ONBOARDING_FOOTER_LINK" = "Узнать больше...";
+// Continue button to exit onboarding
+"ONBOARDING_CONTINUE_BUTTON" = "Продолжить";
+
+// MARK: - Tab area
+// Sources tab
+"TAB_SOURCES" = "Источники";
+// Library tab
+"TAB_LIBRARY" = "Библиотека";
+// Settings tab
+"TAB_SETTINGS" = "Настройки";
+
+// MARK: - TransferPreview
+// Packaging application to get ready for install
+"TRANSFER_PREVIEW_PACKAGING" = "Упаковка...";
+// Ready to install package
+"TRANSFER_PREVIEW_READY" = "Готово к установке";
+// Opening manifest.plist for iOS
+"TRANSFER_PREVIEW_SENDING_MANIFEST" = "Отправка манифеста...";
+// iOS is retrieving IPA file
+"TRANSFER_PREVIEW_SENDING_PAYLOAD" = "Отправка данных...";
+// Done transferring IPA file
+"TRANSFER_PREVIEW_DONE" = "Готово";
+// Completed packaging so you can share
+"TRANSFER_PREVIEW_COMPLETED" = "Завершено";
+
+// MARK: - SourcesViewController
+// Repositories title
+"SOURCES_VIEW_CONTROLLER_REPOSITORIES" = "Репозитории";
+// Add repo button
+"SOURCES_VIEW_CONTROLLER_ADD_SOURCES" = "Добавить";
+// Number of sources, i.e. "100 Sources"
+"SOURCES_VIEW_CONTROLLER_NUMBER_OF_SOURCES" = "%@ источников";
+"SOURCES_VIEW_CONTROLLER_NUMBER_OF_SOURCES_PLURAL" = "%@ источников";
+// Search sources in search bar
+"SOURCES_VIEW_CONTROLLER_SEARCH_SOURCES" = "Поиск среди источников";
+
+// MARK: - SourcesViewController - Add Sources
+"SOURCES_VIEW_ADD_SOURCES_ALERT_TITLE" = "Добавить источник";
+"SOURCES_VIEW_ADD_SOURCES_ALERT_DESCRIPTION" = "Добавить URL репозитория AltStore";
+"SOURCES_VIEW_ADD_SOURCES_ALERT_BUTTON_IMPORT_REPO" = "Импорт репозиториев";
+"SOURCES_VIEW_ADD_SOURCES_ALERT_BUTTON_EXPORT_REPO" = "Экспорт репозиториев";
+"SOURCES_VIEW_ADD_SOURCES_ALERT_BUTTON_EXPORT_REPO_ACTION_SUCCESS" = "Репозитории скопированы в буфер обмена";
+//Footer Validation
+"SOURCES_VIEW_ADD_SOURCES_FOOTER_NOTSTARTED" = "Введите URL, чтобы начать проверку.";
+"SOURCES_VIEW_ADD_SOURCES_FOOTER_NOTVALIDJSON" = "Неверный JSON, пожалуйста, проверьте ввод.";
+"SOURCES_VIEW_ADD_SOURCES_FOOTER_VALID" = "Введен верный JSON.";
+
+// MARK: - SourcesViewController -> SourcesAppViewController
+// Number of apps, i.e. "444 Apps"
+"SOURCES_APP_VIEW_CONTROLLER_NUMBER_OF_APPS" = "%@ приложений";
+"SOURCES_APP_VIEW_CONTROLLER_NUMBER_OF_APPS_PLURAL" = "%@ приложений";
+// Search apps in search bar
+"SOURCES_APP_VIEW_CONTROLLER_SEARCH_APPS" = "Поиск приложений";
+
+// MARK: - SourcesViewController ... - Cells
+// Default subtitle string
+"SOURCES_CELLS_DEFAULT_SUBTITLE" = "Прекрасное приложение.";
+// Default description string
+"SOURCES_CELLS_DEFAULT_DESCRIPTION" = "Крутое приложение.";
+
+// MARK: - SourceAppViewController ... - Actions
+// Available Versions Alert Title
+"SOURCES_CELLS_ACTIONS_HOLD_AVAILABLE_VERSIONS" = "Доступные версии";
+//Filter Menu
+"SOURCES_CELLS_ACTIONS_FILTER_TITLE" = "Фильтр по";
+"SOURCES_CELLS_ACTIONS_FILTER_BY_DEFAULT" = "По умолчанию";
+"SOURCES_CELLS_ACTIONS_FILTER_BY_NAME" = "Имя";
+"SOURCES_CELLS_ACTIONS_FILTER_BY_DATE" = "Дата";
+
+// MARK: - AppsInformationViewController
+// Application Section
+"APPS_INFORMATION_SECTION_TITLE_NAME" = "Приложения";
+// Bundle Section
+"APPS_INFORMATION_SECTION_TITLE_NAME" = "Бандл";
+
+//
+"APPS_INFORMATION_TITLE_DELETED_FILE" = "Файл удален";
+"APPS_INFORMATION_TITLE_DELETED_FILE_TITLE" = "Файл был удален.";
+"APPS_INFORMATION_TITLE_DELETED_FILE_DESCRIPTION" = "Это бесполезная запись, у нее нет файла, и Feather не позволит вам ее установить. Рекомендуется удалить, проведя пальцем по ячейке во вкладке Приложения.";
+// Application Section
+"APPS_INFORMATION_TITLE_NAME" = "Имя";
+"APPS_INFORMATION_TITLE_VERSION" = "Версия";
+"APPS_INFORMATION_TITLE_IDENTIFIER" = "Идентификатор";
+"APPS_INFORMATION_TITLE_SIZE" = "Размер";
+//
+"APPS_INFORMATION_TITLE_DATE_ADDED" = "Дата добавления";
+// Bundle Section
+"APPS_INFORMATION_TITLE_BUNDLE_NAME" = "Имя бандла";
+"APPS_INFORMATION_TITLE_BUNDLE_PATH" = "Путь до бандла";
+"APPS_INFORMATION_TITLE_ICON_FILE" = "Файл иконки";
+//
+"APPS_INFORMATION_TITLE_OPEN_IN_FILES" = "Открыть в файлах";
+
+// MARK: - AppSigningViewController
+"APP_SIGNING_VIEW_CONTROLLER_CELL_TITLE_CUSTOMIZATION" = "Кастомизация";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_TITLE_SIGNING" = "Подпись";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_TITLE_ADVANCED" = "Расширенные";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_ADD_TWEAKS" = "Добавить твики";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_ADVANCED" = "Расширенные";
+"APP_SIGNING_VIEW_CONTROLLER_START_SIGNING" = "Начать подпись";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_MODIFY_DYLIBS" = "Изменить Dylib-ы";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_PROPERTIES" = "Свойства";
+
+// MARK: - AppSigningViewController - No Certificates Alert
+"APP_SIGNING_VIEW_CONTROLLER_NO_CERTS_ALERT_TITLE" = "Ошибка";
+"APP_SIGNING_VIEW_CONTROLLER_NO_CERTS_ALERT_DESCRIPTION" = "У вас не выбран сертификат! Пожалуйста, выберите или загрузите его в разделе подписи в настройках.";
+
+// MARK: - AppSigningViewController -> AppSigningAdvancedViewController
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_SECTION_TITLE_APPEARENCE" = "Внешний вид";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_SECTION_TITLE_MINIMUM_APP_VERSION" = "Мин. версия приложения";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_SECTION_TITLE_PROPERTIES" = "Свойства";
+
+// MARK: - AppSigningViewController -> AppSigningTweakViewController
+"APP_SIGNING_TWEAK_VIEW_CONTROLLER_TITLE" = "Твики";
+
+// MARK: - SigningsOptionsViewController
+
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_PROTECTIONS" = "Включить защиту";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_PROTECTIONS_DESCRIPTION" = "Включение защиты добавит случайную строку к каждому идентификатору пакета, это сделано для защиты Apple ID, связанного с вашим сертификатом от флага Apple. Однако, если вам все равно, вы можете проигнорировать это.";
+
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_DYNAMIC_PROTECTION" = "Динамическая защита";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_DYNAMIC_PROTECTION_DESCRIPTION" = "Динамическая защита будет применять PPQ защиту только если идентификатор пакета приложения присутствует в App Store. Это требует интернет-соединения во время подписи.";
+
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_IDENTIFIERS" = "Идентификаторы пакетов";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_IDENTIFIERS_NEW" = "Новый идентификатор";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_IDENTIFIERS_ID" = "Идентификатор";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_IDENTIFIERS_ID_REPLACEMENT" = "Замена";
+
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_DISPLAYNAMES" = "Отображаемые имена";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_DISPLAYNAMES_ID" = "Исходное отображаемое имя";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_DISPLAYNAMES_ID_REPLACEMENT" = "Новое отображаемое имя";
+
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_IMMEDIATELY_INSTALL_FROM_SOURCE" = "Сразу устанавливать из источника";
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_IMMEDIATELY_INSTALL_FROM_SOURCE_DESCRIPTION" = "Когда включено, приложения, загруженные из источников, будут предлагать подписать и установить сразу после загрузки.";
+
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_INSTALLAFTERSIGNED" = "Установить после подписи";
+
+"APP_SIGNING_VIEW_CONTROLLER_CELL_SIGNING_OPTIONS_TITLE" = "Параметры подписи";
+
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_PLUGINS" = "Удалить все плагины";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_PLUGINS_DESCRIPTION" = "Удаляет директорию PlugIns внутри приложения, которая обычно содержит некоторые компоненты для правильной работы приложения.";
+
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_UISUPPORTEDDEVICES" = "Удалить UISupportedDevices";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_UISUPPORTEDDEVICES_DESCRIPTION" = "Удаляет ограничения по устройствам для приложения.";
+
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_URLSCHEME" = "Удалить URLScheme";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_URLSCHEME_DESCRIPTION" = "Удаляет все возможные URL-схемы (например, 'feather://')";
+
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_ALLOW_BROWSING_DOCUMENTS" = "Разрешить просмотр документов";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_ALLOW_BROWSING_DOCUMENTS_DESCRIPTION" = "Позволяет другим приложениям открывать и редактировать файлы, хранящиеся в папке Documents. Эта опция также позволяет пользователям устанавливать место сохранения по умолчанию в Настройках.";
+
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_ALLOW_ITUNES_SHARING" = "Разрешить общий доступ через iTunes";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_ALLOW_ITUNES_SHARING_DESCRIPTION" = "Принудительно открывает общий доступ к директории документов приложения, разрешая обмен между iTunes и Finder.";
+
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_FORCE_PRO_MOTION" = "Принудить ProMotion";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_FORCE_PRO_MOTION_DESCRIPTION" = "Включает возможности ProMotion в приложении, однако на более низких версиях 15.x этого может быть недостаточно.";
+
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_FORCE_GAME_MODE" = "Force Game Mode";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_FORCE_GAME_MODE_DESCRIPTION" = "Enables Game Mode within the app, minimizing background activity and prioritized performance for the app.";
+
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_FORCE_FULLSCREEN" = "Принудить полноэкранный режим";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_FORCE_FULLSCREEN_DESCRIPTION" = "Принудительно включает только полноэкранные возможности в приложениях для iPad, запрещая совместное использование экрана с другими приложениями. На внешнем экране окно приложения с этой настройкой сохраняет свой размер холста.";
+
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_DELETE_PLACEHOLDER_WATCH_APP" = "Удалить Watch-приложения";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_DELETE_PLACEHOLDER_WATCH_APP_DESCRIPTION" = "Удаляет нежелательное приложение для Watch, которой не должно быть там, присутствующее в таких приложениях, как YouTube Music и др.";
+
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_FORCELOCALIZATIONS" = "Принудительная попытка локализации";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_FORCELOCALIZATIONS_DESCRIPTION" = "Принудительно применяет локализацию, изменяя каждый локализуемый бандл внутри приложения при попытке изменить имя приложения.";
+
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_PROVISIONING" = "Удалить Provisioning File";
+"APP_SIGNING_INPUT_VIEW_CONTROLLER_REMOVE_PROVISIONING_DESCRIPTION" = "Удаляет .mobileprovision из вашего приложения после подписи.";
+
+// MARK: - LibraryViewController
+//Search Library placeholder
+"SETTINGS_VIEW_CONTROLLER_SEARCH_PLACEHOLDER" = "Поиск в библиотеке";
+//Headers
+"LIBRARY_VIEW_CONTROLLER_SECTION_TITLE_SIGNED_APPS" = "Подписанные приложения";
+"LIBRARY_VIEW_CONTROLLER_SECTION_TITLE_SIGNED_APPS_TOTAL" = "%@ Подписано";
+"LIBRARY_VIEW_CONTROLLER_SECTION_TITLE_SIGNED_APPS_TOTAL_PLURAL" = "%@ Подписано";
+"LIBRARY_VIEW_CONTROLLER_SECTION_BUTTON_IMPORT" = "Импорт";
+"LIBRARY_VIEW_CONTROLLER_SECTION_DOWNLOADED_APPS" = "Загруженные приложения";
+"LIBRARY_VIEW_CONTROLLER_SECTION_TITLE_DOWNLOADED_APPS_TOTAL" = "%@ Загружено";
+//Import Action Sheet
+"LIBRARY_VIEW_CONTROLLER_IMPORT_ACTION_SHEET_FILE" = "Импорт из Файлов";
+"LIBRARY_VIEW_CONTROLLER_IMPORT_ACTION_SHEET_URL" = "Импорт по URL";
+//Sign Action Sheet
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_SIGN" = "Подписать %@";
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_SIGN_INSTALL" = "Подписать и установить %@";
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_RESIGN" = "Переподписать %@";
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_INSTALL" = "Установить %@";
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_SHARE" = "Поделиться %@";
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_OPEN" = "Открыть %@";
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_UPDATE" = "Обновить %@";
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_CLEAR_UPDATE" = "Очистить обновление";
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_VIEW_DATEILS" = "Просмотр деталей";
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_OPEN_LN_FILES" = "Открыть в Файлах";
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_INSTALL_CONFIRM" = "Подтвердить установку";
+"LIBRARY_VIEW_CONTROLLER_SIGN_ACTION_INSTALL_CONFIRM_DESCRIPTION" = "Попытка установки через вкладку загруженных приложений может не сработать, так как они, скорее всего, не подписаны! Рекомендуется сначала подписать это приложение перед установкой.";
+
+// MARK: - SettingsViewController
+// Headers
+"SETTINGS_VIEW_CONTROLLER_SECTION_TITLE_GENERAL" = "Общие";
+"SETTINGS_VIEW_CONTROLLER_SECTION_TITLE_SIGNING" = "Подпись";
+"SETTINGS_VIEW_CONTROLLER_SECTION_TITLE_SIGNING_SERVER" = "Сервер подписи";
+
+// Footers
+"SETTINGS_VIEW_CONTROLLER_SECTION_FOOTER_ISSUES" = "Если в Feather возникнут какие-либо проблемы, пожалуйста, сообщите о них через GitHub репозиторий. При отправке сообщения об ошибке не забудьте приложить логи.";
+"SETTINGS_VIEW_CONTROLLER_SECTION_FOOTER_SERVER_LIMITATIONS" = "К сожалению, из-за ограничений серверные сертификаты необходимо обновлять каждый год для поддержания работоспособности локальных функций Feather. Нажмите эту кнопку, чтобы получить самые актуальные файлы из наших репозиториев.";
+"SETTINGS_VIEW_CONTROLLER_SECTION_FOOTER_DEFAULT_SERVER" = "Сервер по умолчанию: %@";
+
+"SETTINGS_VIEW_CONTROLLER_TITLE" = "Серверные опции";
+"SETTINGS_VIEW_CONTROLLER_TITLE_ONLINE" = "Онлайн";
+"SETTINGS_VIEW_CONTROLLER_TITLE_LOCAL" = "Локальный";
+
+// Cell Titles
+// About Feather
+"SETTINGS_VIEW_CONTROLLER_CELL_ABOUT" = "О %@";
+"SETTINGS_VIEW_CONTROLLER_CELL_SUBMIT_FEEDBACK" = "Отправить отзыв";
+"SETTINGS_VIEW_CONTROLLER_CELL_GITHUB" = "GitHub репозиторий";
+"SETTINGS_VIEW_CONTROLLER_CELL_DISPLAY" = "Внешний вид";
+"SETTINGS_VIEW_CONTROLLER_CELL_APP_ICON" = "Иконка приложения";
+"SETTINGS_VIEW_CONTROLLER_CELL_LANGUAGE" = "Язык";
+"SETTINGS_VIEW_CONTROLLER_CELL_CURRENT_CERTIFICATE_NOSELECTED" = "Нет выбранных сертификатов";
+"SETTINGS_VIEW_CONTROLLER_CELL_ADD_CERTIFICATES" = "Добавить сертификат";
+
+
+
+"SETTINGS_VIEW_CONTROLLER_CELL_SIGN_OPTIONS" = "Параметры подписи";
+"SETTINGS_VIEW_CONTROLLER_CELL_SERVER_OPTIONS" = "Серверные опции";
+"SETTINGS_VIEW_CONTROLLER_CELL_VIEW_LOGS" = "Просмотр логов";
+"SETTINGS_VIEW_CONTROLLER_CELL_APPS_FOLDER" = "Открыть папку приложений";
+"SETTINGS_VIEW_CONTROLLER_CELL_CERTS_FOLDER" = "Открыть папку сертификатов";
+
+
+"SETTINGS_VIEW_CONTROLLER_CELL_UPDATE_LOCAL_CERTIFICATE" = "Обновить локальный сертификат";
+"SETTINGS_VIEW_CONTROLLER_CELL_UPDATE_LOCAL_CERTIFICATE_UPDATING" = "Обновление локального сертификата";
+"SETTINGS_VIEW_CONTROLLER_CELL_RESET" = "Сброс";
+"SETTINGS_VIEW_CONTROLLER_CELL_RESET_ALL" = "Сброс всего";
+
+"SETTINGS_VIEW_CONTROLLER_CELL_RESET_CONFIGURATION" = "Сбросить конфигурацию";
+"SETTINGS_VIEW_CONTROLLER_CELL_USE_CUSTOM_SERVER" = "Использовать свой сервер";
+
+"SETTINGS_VIEW_CONTROLLER_CELL_ONLINE_INSTALL_METHOD" = "Метод онлайн-установки";
+
+
+"SETTINGS_VIEW_CONTROLLER_CELL_EXPORT_ID" = "Экспортировать случайный идентификатор";
+"SETTINGS_VIEW_CONTROLLER_CELL_CHANGE_ID" = "Изменить случайный идентификатор";
+
+//
+"SETTINGS_VIEW_CONTROLLER_PPQ_ALERT_TITLE" = "Защита PPQCheck";
+"SETTINGS_VIEW_CONTROLLER_PPQ_ALERT_DESCRIPTION" = "Эта настройка включает защиту PPQCheck, которая добавляет случайную строку к идентификатору пакета для устанавливаемых вами приложений.\n\nЭто сделано для того, чтобы Apple не могла пометить ваш аккаунт, (пытаясь) сделать так, чтобы они не могли связать устанавливаемое вами приложение с приложением из App Store.";
+
+"SETTINGS_VIEW_CONTROLLER_URL_ALERT_TITLE" = "Изменить URL загрузки";
+"SETTINGS_VIEW_CONTROLLER_CELL_CHANGE_IDENTIFIER" = "Изменить случайный идентификатор";
+
+// MARK: - SettingsViewController -> AboutViewController
+"ABOUT_VIEW_CONTROLLER_SECTION_TITLE_CREDITS" = "Авторы";
+"ABOUT_VIEW_CONTROLLER_SECTION_TITLE_SPONSORS" = "Спонсоры";
+
+"ABOUT_VIEW_CONTROLLER_SECTION_TITLE_DEVICE" = "Устройство";
+"ABOUT_VIEW_CONTROLLER_SECTION_TITLE_ACKNOWLEDGEMENTS" = "Благодарности";
+
+
+"ABOUT_VIEW_CONTROLLER_CELL_DEVICE_VERSION" = "Версия устройства";
+"ABOUT_VIEW_CONTROLLER_CELL_DEVICE_ARCH" = "Архитектура";
+"ABOUT_VIEW_CONTROLLER_CELL_APP_VERSION" = "Версия приложения";
+
+// MARK: - SettingsViewController -> DisplayViewController
+"DISPLAY_VIEW_CONTROLLER_SECTION_TITLE_TINT_COLOR" = "Цвет акцента";
+"DISPLAY_VIEW_CONTROLLER_SECTION_TITLE_APP_APPEARENCE" = "Внешний вид приложения";
+"DISPLAY_VIEW_CONTROLLER_SECTION_TITLE_STORE" = "Магазин";
+
+"DISPLAY_VIEW_CONTROLLER_CELL_DEFAULT_SUBTITLE" = "Стандартный подзаголовок";
+"DISPLAY_VIEW_CONTROLLER_CELL_DEFAULT_SUBTITLE_DESCRIPTION" = "Стандартный стиль для Feather, скрывает локализованное описание и показывает только подзаголовок.";
+
+"DISPLAY_VIEW_CONTROLLER_CELL_LOCALIZED_SUBTITLE" = "Локализованный подзаголовок";
+"DISPLAY_VIEW_CONTROLLER_CELL_LOCALIZED_SUBTITLE_DESCRIPTION" = "Заменяет подзаголовок описанием приложения.";
+
+"DISPLAY_VIEW_CONTROLLER_CELL_BIG_DESCRIPTION" = "Большое описание";
+"DISPLAY_VIEW_CONTROLLER_CELL_BIG_DESCRIPTION_DESCRIPTION" = "Заменяет скриншоты описанием приложения.";
+
+"DISPLAY_VIEW_CONTROLLER_CELL_TEAM_NAME" = "Использовать имя команды";
+"DISPLAY_VIEW_CONTROLLER_CELL_TEAM_NAME_DESCRIPTION" = "Заменяет имя сертификата на имя вашей команды, может быть полезно для лучшего различения сертификатов, если провайдеры используют одинаковые имена App ID.";
+
+// MARK: - SettingsViewController -> LanguageViewController.swift
+"LANGUAGE_VIEW_TITLE" = "Язык";
+"LANGUAGE_VIEW_CELL_USE_SYSTEM_LANGUAGE" = "Использовать язык системы";
+
+// MARK: - SettingsViewController -> CertificatesViewController
+"CERTIFICATES_VIEW_CONTROLLER_TITLE" = "Сертификаты";
+
+"CERTIFICATES_VIEW_CONTROLLER_CELL_ADD_FOOTER" = "Поддерживаемые форматы файлов:\n\n- P12 (.p12)\n- Mobile Provision (.mobileprovision)\n\nУбедитесь, что ваши сертификаты действительны и могут использоваться для установки на ваше устройство!";
+
+"CERTIFICATES_VIEW_CONTROLLER_CELL_ADD" = "Добавить сертификаты";
+"CERTIFICATES_VIEW_CONTROLLER_CELL_ADD_DESCRIPTION" = "Нажмите, чтобы добавить сертификат";
+
+// MARK: - SettingsViewController -> CertificatesViewController -> Delete Alert
+"CERTIFICATES_VIEW_CONTROLLER_DELETE_ALERT_TITLE" = "Не делайте этого!";
+"CERTIFICATES_VIEW_CONTROLLER_DELETE_ALERT_DESCRIPTION" = "Вы пытаетесь удалить выбранный сертификат, попробуйте позже, когда у вас будет другой сертификат.";
+
+// MARK: - SettingsViewController -> CertificatesViewController -> Cell
+"CERTIFICATES_VIEW_CONTROLLER_CELL_EXPIRED" = "Истёк";
+"CERTIFICATES_VIEW_CONTROLLER_CELL_DAYS_LEFT" = "Осталось %@ дней";
+
+// MARK: - SettingsViewController -> CertificatesViewController -> CertImportingViewController
+"CERT_IMPORTING_VIEWCONTROLLER_TITLE" = "Импорт";
+"CERT_IMPORTING_VIEWCONTROLLER_SECTION_PROVISIONING" = "";
+
+// MARK: - SettingsViewController -> CertificatesViewController -> CertImportingViewController -> Password Alert
+
+"CERT_IMPORTING_VIEWCONTROLLER_PW_ALERT_TITLE" = "Неверный пароль";
+"CERT_IMPORTING_VIEWCONTROLLER_PW_ALERT_DESCRIPTION" = "Пожалуйста, проверьте пароль и попробуйте снова.";
+
+"CERT_IMPORTING_VIEWCONTROLLER_CELL_IMPORT_PROV" = "Импортировать файл профиля";
+"CERT_IMPORTING_VIEWCONTROLLER_CELL_IMPORT_CERT" = "Импортировать файл сертификата";
+"CERT_IMPORTING_VIEWCONTROLLER_CELL_IMPORT_ENTER_PW" = "Введите пароль";
+"CERT_IMPORTING_VIEWCONTROLLER_CELL_IMPORT_PW" = "Пароль";
+
+"CERT_IMPORTING_VIEWCONTROLLER_FOOTER_PROV" = "Импортируйте файл профиля, чтобы иметь возможность устанавливать приложения на ваше устройство.";
+"CERT_IMPORTING_VIEWCONTROLLER_FOOTER_CERT" = "Импортируйте файл, содержащий действительный сертификат.";
+"CERT_IMPORTING_VIEWCONTROLLER_FOOTER_PASS" = "Введите пароль, связанный с закрытым ключом, оставьте поле пустым, если пароль не требуется.";
+
+// MARK: - SettingsViewController -> ResetViewController
+"RESET_VIEW_CONTROLLER_CLEAR_CACHE" = "Очистить кэш сети";
+"RESET_VIEW_CONTROLLER_CLEAR_CACHE_ALERT_TITLE" = "Это действие необратимо. Кэшированные сетевые запросы и изображения будут удалены.";
+
+// MARK: - Donation
+"DONATION_TITLE" = "Пожертвовать";
+"DONATION_DONATIONS" = "Пожертвования";
+
+"DONATION_CELL_1_TITLE" = "Секретный репозиторий";
+"DONATION_CELL_1_DESCRIPTION" = "Получите доступ к нашему секретному репозиторию, сделав пожертвование, это даст вам бета-доступ к Feather.";
+
+"DONATION_CELL_2_TITLE" = "Покажите свою поддержку";
+"DONATION_CELL_2_DESCRIPTION" = "Покажите свою поддержку, сделав пожертвование! Если вы не можете пожертвовать, распространение информации о Feather тоже помогает!";
+
+// MARK: - SettingsViewController -> LogsViewController.swift
+"LOGS_VIEW_SECTION_TITLE_ERROR" = "%@ критических ошибок.";
+"LOGS_VIEW_SECTION_TITLE_SHARE" = "Поделиться логами";
+"LOGS_VIEW_SECTION_TITLE_COPY" = "Копировать логи";
+"LOGS_VIEW_SUCCESS_DESCRIPTION" = "Содержимое логов скопировано в буфер обмена.";
+"LOGS_VIEW_FAIL_DESCRIPTION" = "Не удалось скопировать содержимое логов.";

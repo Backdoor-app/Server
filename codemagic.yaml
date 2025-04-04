@@ -1,0 +1,24 @@
+workflows:
+  keep-render-app-alive:
+    name: Keep Render App Alive
+    # Define the environment (similar to runs-on in GitHub Actions)
+    environment:
+      # Codemagic uses predefined machine types; 'mac_mini_m1' is a common choice
+      # You can adjust this based on your needs
+      instance_type: mac_mini_m1
+    # Define triggering conditions
+    triggering:
+      events:
+        # Manual triggering via Codemagic UI
+        - push # This allows manual triggering; Codemagic doesn't have a direct "workflow_dispatch" equivalent
+      schedule:
+        # Run every 5 minutes (same as cron: '*/5 * * * *')
+        - cron: "*/5 * * * *"
+    scripts:
+      - name: Ping application URL
+        script: |
+          # Use curl to ping the URL, matching the GitHub Actions step
+          curl -s -o /dev/null -w "%{http_code}" https://database-iupv.onrender.com
+    # Optional: Define artifacts or publishing if needed (not present in the original workflow)
+    artifacts:
+      - "*.log" # Example: Collect logs if any are generated (optional)
