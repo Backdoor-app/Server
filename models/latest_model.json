@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "accuracy": 0.92,
+  "training_data_size": 1000,
+  "training_date": "2025-04-01T00:00:00",
+  "is_ensemble": false,
+  "component_models": 1,
+  "classes": ["light_on", "light_off", "temperature_query", "music_play", "weather_query", "set_timer", "general_question"],
+  "sklearn_path": "models/intent_classifier_1.0.0.joblib",
+  "coreml_path": "models/model_1.0.0.mlmodel"
+}
