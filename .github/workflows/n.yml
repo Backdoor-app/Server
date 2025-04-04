@@ -27,7 +27,7 @@ jobs:
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v5
       with:
-        token: ${{ secrets.TRANSFER_SECRET }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         commit-message: "Sync Backdoor-App files from source repo"
         branch: "sync-backdoor-app"
         delete-branch: true
