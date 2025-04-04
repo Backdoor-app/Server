@@ -1,0 +1,154 @@
+name: Post Data to AI Learn Endpoint
+
+on:
+  workflow_dispatch:  # Manual trigger; you can change this to 'push', 'schedule', etc.
+
+jobs:
+  post-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Send POST request to AI Learn API
+        id: post_request
+        run: |
+          # Define the JSON payload
+          JSON_PAYLOAD='{
+            "deviceId": "device_123",
+            "appVersion": "1.2.0",
+            "modelVersion": "1.0.0",
+            "osVersion": "iOS 15.0",
+            "interactions": [
+              {
+                "id": "int_001",
+                "timestamp": "2025-04-01T10:15:00Z",
+                "userMessage": "Can you sign my new app?",
+                "aiResponse": "Sure, please specify the name or path of the app you'\''d like me to sign.",
+                "detectedIntent": "Sign_app",
+                "confidenceScore": 0.95,
+                "feedback": {
+                  "rating": 4,
+                  "comment": "Quick and clear"
+                }
+              },
+              {
+                "id": "int_002",
+                "timestamp": "2025-04-01T12:00:00Z",
+                "userMessage": "List all files in my app directory",
+                "aiResponse": "Could you please provide the directory path you'\''d like me to list files from?",
+                "detectedIntent": "List_files",
+                "confidenceScore": 0.89,
+                "feedback": {
+                  "rating": 3,
+                  "comment": "Needs more context"
+                }
+              },
+              {
+                "id": "int_003",
+                "timestamp": "2025-04-01T14:45:00Z",
+                "userMessage": "Run a terminal command for me",
+                "aiResponse": "What terminal command would you like me to execute?",
+                "detectedIntent": "Run_terminal",
+                "confidenceScore": 0.93,
+                "feedback": {
+                  "rating": 5,
+                  "comment": "Exactly what I needed"
+                }
+              },
+              {
+                "id": "int_004",
+                "timestamp": "2025-04-02T09:30:00Z",
+                "userMessage": "Sign this app: MyCoolApp.ipa",
+                "aiResponse": "Signing MyCoolApp.ipa now. Please wait a moment for confirmation.",
+                "detectedIntent": "Sign_app",
+                "confidenceScore": 0.98,
+                "feedback": {
+                  "rating": 5,
+                  "comment": "Fast and precise"
+                }
+              },
+              {
+                "id": "int_005",
+                "timestamp": "2025-04-02T11:20:00Z",
+                "userMessage": "Delete a file for me",
+                "aiResponse": "Which file would you like me to delete? Please provide the file name or path.",
+                "detectedIntent": "Delete_file",
+                "confidenceScore": 0.91,
+                "feedback": {
+                  "rating": 4,
+                  "comment": "Helpful clarification"
+                }
+              },
+              {
+                "id": "int_006",
+                "timestamp": "2025-04-02T15:10:00Z",
+                "userMessage": "Show me how to sign an app",
+                "aiResponse": "To sign an app, please provide its name or path, and I'\''ll guide you through the process. For example, say '\''Sign MyApp.ipa'\''.",
+                "detectedIntent": "Tutorial_sign_app",
+                "confidenceScore": 0.87,
+                "feedback": {
+                  "rating": 5,
+                  "comment": "Great tutorial start"
+                }
+              },
+              {
+                "id": "int_007",
+                "timestamp": "2025-04-03T08:50:00Z",
+                "userMessage": "Execute '\''ls -la'\'' in terminal",
+                "aiResponse": "It seems you'\''re using a Unix command. For iOS, I can run equivalent commands. Did you mean to list files? If so, provide a directory.",
+                "detectedIntent": "Run_terminal",
+                "confidenceScore": 0.85,
+                "feedback": {
+                  "rating": 3,
+                  "comment": "Caught the error but needs better suggestion"
+                }
+              },
+              {
+                "id": "int_008",
+                "timestamp": "2025-04-03T13:25:00Z",
+                "userMessage": "Move a file to another folder",
+                "aiResponse": "Please tell me the file name and the destination folder path.",
+                "detectedIntent": "Move_file",
+                "confidenceScore": 0.94,
+                "feedback": {
+                  "rating": 4,
+                  "comment": "Straightforward"
+                }
+              },
+              {
+                "id": "int_009",
+                "timestamp": "2025-04-03T16:40:00Z",
+                "userMessage": "Sign all apps in my folder",
+                "aiResponse": "Which folder contains the apps you'\''d like me to sign? Please provide the path.",
+                "detectedIntent": "Sign_multiple_apps",
+                "confidenceScore": 0.90,
+                "feedback": {
+                  "rating": 5,
+                  "comment": "Handles bulk signing well"
+                }
+              },
+              {
+                "id": "int_010",
+                "timestamp": "2025-04-03T18:00:00Z",
+                "userMessage": "Check if MyApp.ipa is signed",
+                "aiResponse": "I'\''ll check the signing status of MyApp.ipa. Please provide its location if it'\''s not in the default directory.",
+                "detectedIntent": "Check_sign_status",
+                "confidenceScore": 0.96,
+                "feedback": {
+                  "rating": 4,
+                  "comment": "Useful feature"
+                }
+              }
+            ]
+          }'
+
+          # Send POST request and capture the response
+          RESPONSE=$(curl -X POST \
+            -H "Content-Type: application/json" \
+            -d "$JSON_PAYLOAD" \
+            "https://backdoor-ai-b3k3.onrender.com/api/ai/learn")
+
+          # Print the response to the GitHub Actions log
+          echo "API Response: $RESPONSE"
