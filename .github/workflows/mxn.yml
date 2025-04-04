@@ -24,8 +24,11 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Install coremltools
+        run: pip install coremltools
+
       - name: Run extraction script
-        run: python extract_mlmodel.py  # Updated path since script is in root
+        run: python extract_mlmodel.py  # Script is in root directory
 
       - name: Create Release
         id: create_release
