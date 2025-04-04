@@ -97,15 +97,28 @@ if config.DROPBOX_ENABLED:
 # Initialize database on startup
 init_db(config.DB_PATH)
 
-import utils.model_download
+import os
+# Import Dropbox storage functionality
+if config.DROPBOX_ENABLED:
+    from utils.dropbox_storage import init_dropbox_storage, get_dropbox_storage
+    from learning.trainer_dropbox import check_base_model_in_dropbox
 
-# Ensure the base model is available
+# Check for base model in Dropbox
 try:
-    base_model_available = utils.model_download.ensure_base_model()
-    if base_model_available:
-        logger.info("Base model is available for use")
+    if config.DROPBOX_ENABLED:
+        # Check if base model exists in Dropbox
+        base_model_available = check_base_model_in_dropbox()
+        if base_model_available:
+            logger.info(f"Base model '{config.BASE_MODEL_NAME}' found in Dropbox and is available for use")
+        else:
+            logger.warning(f"Base model '{config.BASE_MODEL_NAME}' not found in Dropbox. Please upload it to your Dropbox folder.")
     else:
-        logger.warning("Base model is not available - will need to be downloaded later")
+        # Check if base model exists locally
+        base_model_path = os.path.join(config.MODEL_DIR, config.BASE_MODEL_NAME)
+        if os.path.exists(base_model_path):
+            logger.info(f"Base model found at {base_model_path} and is available for use")
+        else:
+            logger.warning(f"Base model not found at {base_model_path}. Please place your model file in the models directory.")
 except Exception as e:
     logger.error(f"Error checking base model: {e}")
 # =============================================================================
