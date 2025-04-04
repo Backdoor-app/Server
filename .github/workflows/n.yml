@@ -1,0 +1,38 @@
+name: Download and Upload Backdoor-App
+
+on:
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  sync-repo:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      
+    - name: Download ZIP file
+      run: |
+        curl -L -o main-app-main.zip "https://github.com/Backdoor-app/Main-app/archive/refs/heads/main.zip.zip"
+        
+    - name: Unzip the file
+      run: |
+        unzip main-app-main.zip
+        
+    - name: Move contents to root
+      run: |
+        mv main-app-main/* .
+        rm -rf mai-app-main main-app-main.zip
+        
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.TRANSFER_SECRET }}
+        commit-message: "Sync Backdoor-App files from source repo"
+        branch: "sync-backdoor-app"
+        delete-branch: true
+        title: "Sync Backdoor-App files from source repo"
+        body: |
+          This PR synchronizes the Backdoor-App files from the source repository.
+          Changes include downloading and extracting the latest ZIP from Backdoor-v5 repo.
+        labels: "automated pr"
