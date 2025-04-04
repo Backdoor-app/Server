@@ -21,7 +21,7 @@ jobs:
         
     - name: Move contents to root
       run: |
-        mv main-app-main/* .
+        mv Main-app-main/* .
         rm -rf Main-app-main Main-app-main.zip
         
     - name: Create Pull Request
