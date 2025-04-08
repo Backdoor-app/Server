@@ -3,6 +3,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
 from cryptography.hazmat.backends import default_backend
+from cryptography.x509 import load_der_x509_certificate  # Added this import
 import os
 from pathlib import Path
 
@@ -13,8 +14,6 @@ def load_p12(p12_path):
             p12_data = f.read()
         # Load PKCS12 with no password (as specified)
         private_key, certificate, _ = load_key_and_certificates(p12_data, None)
-        # `private_key` is already a cryptography private key object
-        # `certificate` is already a cryptography certificate object
         return private_key, certificate
     except Exception as e:
         print(f"Error loading .p12 file: {str(e)}")
@@ -66,7 +65,7 @@ def verify_backdoor(backdoor_path):
             # Read certificate
             cert_len = int.from_bytes(f.read(4), "big")
             cert_der = f.read(cert_len)
-            certificate = serialization.load_der_x509_certificate(cert_der, default_backend())
+            certificate = load_der_x509_certificate(cert_der)  # Updated to use the correct function
             
             # Read original data
             data_len = int.from_bytes(f.read(4), "big")
@@ -103,8 +102,8 @@ if __name__ == "__main__":
     # Create the .backdoor file
     create_backdoor(p12_file, mobileprovision_file, output_file)
 
-    # Verify the .backdoor file (optional test)
-    # original_data = verify_backdoor(output_file)
-    # if original_data:
-    #     with open("extracted.mobileprovision", "wb") as f:
-    #         f.write(original_data)
+    # Verify the .backdoor file
+    original_data = verify_backdoor(output_file)
+    if original_data:
+        with open("extracted.mobileprovision", "wb") as f:
+            f.write(original_data)
