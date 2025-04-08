@@ -1,5 +1,5 @@
 from OpenSSL import crypto
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 import os
@@ -10,9 +10,8 @@ def load_p12(p12_path):
     try:
         with open(p12_path, "rb") as f:
             p12_data = f.read()
-        # Load PKCS12 with no password
-        p12 = crypto.load_pkcs12(p12_data)
-        # Get private key and certificate
+        # Load PKCS12 with no password (as specified)
+        p12 = crypto.load_pkcs12(p12_data)  # This should work in modern pyOpenSSL
         private_key = p12.get_privatekey().to_cryptography_key()
         certificate = p12.get_certificate().to_cryptography_key()
         return private_key, certificate
