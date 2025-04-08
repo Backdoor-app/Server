@@ -1,127 +1,103 @@
-from OpenSSL import crypto
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
-from cryptography.hazmat.backends import default_backend
-from cryptography.x509 import load_der_x509_certificate
-import os
 from pathlib import Path
+import hashlib
+import math
 
-# Function to load the private key, certificate, and raw .p12 data from a .p12 file
+# Hardcoded secret key for encryption (shared with decode script)
+SECRET = b'my_custom_secret_key_2023'
+KEY = hashlib.sha256(SECRET).digest()
+
+# Padding function to align data to block size
+def pad(data, block_size=16):
+    if len(data) % block_size == 0:
+        return data
+    padding_len = block_size - (len(data) % block_size)
+    return data + b'\0' * padding_len
+
+# Custom permutation for obfuscation (byte reversal)
+def permute(block):
+    return block[::-1]
+
+# Transformation function for Feistel network
+def F(data, round_key):
+    return hashlib.sha256(data + round_key).digest()[:8]
+
+# Custom block encryption using a Feistel network
+def encrypt_block(block, key):
+    L, R = block[:8], block[8:]
+    for round in range(4):
+        round_key = hashlib.sha256(key + round.to_bytes(4, 'big')).digest()[:8]
+        F_val = F(R, round_key)
+        new_R = bytes(a ^ b for a, b in zip(L, F_val))
+        L, R = R, new_R
+    return R + L
+
+# Encrypt and obfuscate data
+def encrypt_data(data, key):
+    padded_data = pad(data)
+    blocks = [padded_data[i:i+16] for i in range(0, len(padded_data), 16)]
+    encrypted_blocks = [permute(encrypt_block(block, key)) for block in blocks]
+    return b''.join(encrypted_blocks)
+
+# Load .p12 file data
 def load_p12(p12_path):
     try:
         with open(p12_path, "rb") as f:
             p12_data = f.read()
-        # Load PKCS12 with no password (as specified)
         private_key, certificate, _ = load_key_and_certificates(p12_data, None)
-        return private_key, certificate, p12_data  # Return raw p12_data too
+        return private_key, certificate, p12_data
     except Exception as e:
-        print(f"Error loading .p12 file: {str(e)}")
+        print(f"Error loading .p12 file: {e}")
         return None, None, None
 
-# Function to create a .backdoor file
+# Create an encrypted and obfuscated .backdoor file
 def create_backdoor(p12_path, input_data_path, output_path):
     try:
-        # Load the private key, certificate, and raw .p12 data
+        # Load .p12 components
         private_key, certificate, p12_data = load_p12(p12_path)
-        if not private_key or not certificate or not p12_data:
+        if not all([private_key, certificate, p12_data]):
             return
 
-        # Read the input data to sign (e.g., mobileprovision)
+        # Read input data (e.g., .mobileprovision)
         with open(input_data_path, "rb") as f:
             data_to_sign = f.read()
 
-        # Create a signature using the private key (signing only mobileprovision data)
+        # Sign the original input data
         signature = private_key.sign(
             data_to_sign,
             padding.PKCS1v15(),
             hashes.SHA256()
         )
 
-        # Combine certificate, p12 data, mobileprovision data, and signature into a .backdoor file
+        # Encrypt and obfuscate the .p12 and input data
+        encrypted_p12 = encrypt_data(p12_data, KEY)
+        encrypted_data = encrypt_data(data_to_sign, KEY)
+
+        # Write to .backdoor file
         with open(output_path, "wb") as f:
-            # Write certificate (DER format)
             cert_der = certificate.public_bytes(serialization.Encoding.DER)
-            f.write(len(cert_der).to_bytes(4, "big"))  # Length prefix
+            f.write(len(cert_der).to_bytes(4, "big"))
             f.write(cert_der)
-            
-            # Write .p12 data
-            f.write(len(p12_data).to_bytes(4, "big"))  # Length prefix
-            f.write(p12_data)
-            
-            # Write original mobileprovision data
-            f.write(len(data_to_sign).to_bytes(4, "big"))  # Length prefix
-            f.write(data_to_sign)
-            
-            # Write signature
-            f.write(len(signature).to_bytes(4, "big"))  # Length prefix
+            f.write(len(p12_data).to_bytes(4, "big"))  # Original length
+            f.write(encrypted_p12)
+            f.write(len(data_to_sign).to_bytes(4, "big"))  # Original length
+            f.write(encrypted_data)
+            f.write(len(signature).to_bytes(4, "big"))
             f.write(signature)
 
-        print(f"Successfully created {output_path}")
-
+        print(f"Created encrypted .backdoor file at {output_path}")
     except Exception as e:
-        print(f"Error creating .backdoor: {str(e)}")
-
-# Function to verify and extract from the .backdoor file
-def verify_backdoor(backdoor_path, output_mobileprovision_path, output_p12_path):
-    try:
-        with open(backdoor_path, "rb") as f:
-            # Read certificate
-            cert_len = int.from_bytes(f.read(4), "big")
-            cert_der = f.read(cert_len)
-            certificate = load_der_x509_certificate(cert_der)
-            
-            # Read .p12 data
-            p12_len = int.from_bytes(f.read(4), "big")
-            p12_data = f.read(p12_len)
-            
-            # Read original mobileprovision data
-            data_len = int.from_bytes(f.read(4), "big")
-            data = f.read(data_len)
-            
-            # Read signature
-            sig_len = int.from_bytes(f.read(4), "big")
-            signature = f.read(sig_len)
-
-        # Verify the signature using the public key from the certificate
-        public_key = certificate.public_key()
-        public_key.verify(
-            signature,
-            data,
-            padding.PKCS1v15(),
-            hashes.SHA256()
-        )
-        print("Signature is valid!")
-
-        # Save the extracted mobileprovision data
-        with open(output_mobileprovision_path, "wb") as f:
-            f.write(data)
-        print(f"Extracted mobileprovision to {output_mobileprovision_path}")
-
-        # Save the extracted .p12 data
-        with open(output_p12_path, "wb") as f:
-            f.write(p12_data)
-        print(f"Extracted .p12 to {output_p12_path}")
-
-        return data, p12_data  # Return both for further use if needed
-
-    except Exception as e:
-        print(f"Verification failed: {str(e)}")
-        return None, None
+        print(f"Error creating .backdoor: {e}")
 
 if __name__ == "__main__":
-    # File paths
     base_dir = Path(__file__).parent
     certs_dir = base_dir / "BDG cert"
     
     p12_file = certs_dir / "certificate.p12"
-    mobileprovision_file = certs_dir / "profile.mobileprovision"
-    output_file = base_dir / "signed_bundle.backdoor"
-    extracted_mobileprovision_file = base_dir / "extracted.mobileprovision"
-    extracted_p12_file = base_dir / "extracted_certificate.p12"
+    input_file = certs_dir / "profile.mobileprovision"
+    backdoor_file = base_dir / "signed_bundle.backdoor"
 
     # Create the .backdoor file
-    create_backdoor(p12_file, mobileprovision_file, output_file)
-
-    # Verify the .backdoor file and extract both files
-    original_data, p12_data = verify_backdoor(output_file, extracted_mobileprovision_file, extracted_p12_file)
+    create_backdoor(p12_file, input_file, backdoor_file)
