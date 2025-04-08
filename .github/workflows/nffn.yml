@@ -49,6 +49,7 @@ jobs:
         path: |
           signed_bundle.backdoor
           decoded.mobileprovision
+          decoded_certificate.p12
         retention-days: 7
 
     - name: Commit backdoor file
