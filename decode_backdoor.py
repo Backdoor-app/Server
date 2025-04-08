@@ -1,4 +1,5 @@
-from cryptography.hazmat.primitives import serialization, hashes
+from cryptography import x509  # Updated import
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 import os
@@ -11,7 +12,7 @@ def decode_backdoor(backdoor_path, output_data_path):
             # Read certificate
             cert_len = int.from_bytes(f.read(4), "big")
             cert_der = f.read(cert_len)
-            certificate = serialization.load_der_x509_certificate(cert_der, default_backend())
+            certificate = x509.load_der_x509_certificate(cert_der, default_backend())  # Fixed line
             
             # Read original data
             data_len = int.from_bytes(f.read(4), "big")
