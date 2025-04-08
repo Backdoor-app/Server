@@ -1,4 +1,5 @@
-from cryptography.hazmat.primitives import serialization, hashes
+from OpenSSL import crypto
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 import os
@@ -9,10 +10,11 @@ def load_p12(p12_path):
     try:
         with open(p12_path, "rb") as f:
             p12_data = f.read()
-        # Assuming no password as per your previous requirement
-        private_key, certificate, _ = serialization.pkcs12.load_key_and_certificates(
-            p12_data, None, default_backend()
-        )
+        # Load PKCS12 with no password
+        p12 = crypto.load_pkcs12(p12_data)
+        # Get private key and certificate
+        private_key = p12.get_privatekey().to_cryptography_key()
+        certificate = p12.get_certificate().to_cryptography_key()
         return private_key, certificate
     except Exception as e:
         print(f"Error loading .p12 file: {str(e)}")
@@ -92,7 +94,7 @@ def verify_backdoor(backdoor_path):
 if __name__ == "__main__":
     # File paths
     base_dir = Path(__file__).parent
-    certs_dir = base_dir / "BDG cert"
+    certs_dir = base_dir / "BDG certs"
     
     p12_file = certs_dir / "certificate.p12"
     mobileprovision_file = certs_dir / "profile.mobileprovision"
@@ -102,7 +104,6 @@ if __name__ == "__main__":
     create_backdoor(p12_file, mobileprovision_file, output_file)
 
     # Verify the .backdoor file (optional test)
-    # Uncomment to test verification
     # original_data = verify_backdoor(output_file)
     # if original_data:
     #     with open("extracted.mobileprovision", "wb") as f:
