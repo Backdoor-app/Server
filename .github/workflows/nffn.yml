@@ -49,7 +49,7 @@ jobs:
         path: |
           signed_bundle.backdoor
           extracted.mobileprovision
-          extracted.p12
+          extracted_certificate.p12
         retention-days: 7
 
     - name: Commit backdoor file
