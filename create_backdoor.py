@@ -94,7 +94,7 @@ def verify_backdoor(backdoor_path):
 if __name__ == "__main__":
     # File paths
     base_dir = Path(__file__).parent
-    certs_dir = base_dir / "BDG certs"
+    certs_dir = base_dir / "BDG cert"
     
     p12_file = certs_dir / "certificate.p12"
     mobileprovision_file = certs_dir / "profile.mobileprovision"
