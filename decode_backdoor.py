@@ -9,7 +9,7 @@ import re
 
 # Hardcoded secret key
 SECRET = b'bdg_was_here_2025_backdoor_245'
-KEY = hashlib.sha256(SECRET).digest()  # Fixed from 'SCRIPT' to 'SECRET'
+KEY = hashlib.sha256(SECRET).digest()
 
 # Custom permutation
 def permute(block):
@@ -40,20 +40,17 @@ def decrypt_data(encrypted_data, key, original_len):
 def sanitize_filename(name):
     return re.sub(r'[<>:"/\\|?*]', '_', name)  # Replace invalid characters with underscore
 
-# Get unique filename by appending a counter if the name already exists
-def get_unique_filename(base_dir, base_name, extension):
-    counter = 1
-    original_name = f"{base_name}{extension}"
-    unique_name = original_name
+# Get certificate name from backdoor file
+def get_cert_name_from_backdoor(backdoor_path):
+    with open(backdoor_path, "rb") as f:
+        cert_len = int.from_bytes(f.read(4), "big")
+        cert_der = f.read(cert_len)
+        certificate = load_der_x509_certificate(cert_der)
+        cert_name = certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value if certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME) else Path(backdoor_path).parent.name  # Use parent folder name
+        return sanitize_filename(cert_name)
 
-    while (base_dir / unique_name).exists():
-        unique_name = f"{base_name}_{counter}{extension}"
-        counter += 1
-
-    return unique_name
-
-# Verify backdoor file
-def verify_backdoor(backdoor_path, output_base_dir):
+# Decode backdoor file
+def decode_backdoor(backdoor_path, output_base_dir):
     try:
         with open(backdoor_path, "rb") as f:
             # Read certificate
@@ -62,8 +59,7 @@ def verify_backdoor(backdoor_path, output_base_dir):
             certificate = load_der_x509_certificate(cert_der)
 
             # Get certificate name
-            cert_name = certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value if certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME) else "unknown_cert"
-            sanitized_cert_name = sanitize_filename(cert_name)  # Sanitize the name
+            cert_name = get_cert_name_from_backdoor(backdoor_path)
 
             # Read and decrypt .p12 data
             p12_len = int.from_bytes(f.read(4), "big")
@@ -91,20 +87,14 @@ def verify_backdoor(backdoor_path, output_base_dir):
         )
         print(f"Signature verified successfully for certificate {cert_name}!")
 
-        # Create unique output filenames with sanitized certificate name
-        p12_base_name = sanitized_cert_name
-        mobileprovision_base_name = sanitized_cert_name
-        p12_extension = "_extracted_certificate.p12"
-        mobileprovision_extension = "_extracted.mobileprovision"
+        # Create subfolder for this certificate in extracted_output
+        cert_output_dir = output_base_dir / cert_name
+        cert_output_dir.mkdir(exist_ok=True, parents=True)
 
-        unique_p12_filename = get_unique_filename(output_base_dir, p12_base_name, p12_extension)
-        unique_mobileprovision_filename = get_unique_filename(output_base_dir, mobileprovision_base_name, mobileprovision_extension)
+        # Save decrypted files
+        output_p12_path = cert_output_dir / f"{cert_name}_extracted_certificate.p12"
+        output_data_path = cert_output_dir / f"{cert_name}_extracted.mobileprovision"
 
-        output_p12_path = output_base_dir / unique_p12_filename
-        output_data_path = output_base_dir / unique_mobileprovision_filename
-
-        output_base_dir.mkdir(exist_ok=True)
-        
         with open(output_p12_path, "wb") as f:
             f.write(p12_data)
         with open(output_data_path, "wb") as f:
@@ -113,7 +103,7 @@ def verify_backdoor(backdoor_path, output_base_dir):
         print(f"Extracted .p12 to {output_p12_path}")
         print(f"Extracted input data to {output_data_path}")
 
-        return data, p12_data, sanitized_cert_name
+        return data, p12_data, cert_name
 
     except Exception as e:
         print(f"Verification failed for {backdoor_path}: {e}")
@@ -122,7 +112,13 @@ def verify_backdoor(backdoor_path, output_base_dir):
 if __name__ == "__main__":
     base_dir = Path(__file__).parent
     output_dir = base_dir / "extracted_output"
-    backdoor_files = list(base_dir.glob("*.backdoor"))
+    output_dir.mkdir(exist_ok=True, parents=True)
 
-    for backdoor_file in backdoor_files:
-        verify_backdoor(backdoor_file, output_dir)
+    # Look for backdoor files in backdoor_output subfolders
+    backdoor_dir = base_dir / "backdoor_output"
+    if backdoor_dir.exists():
+        backdoor_files = list(backdoor_dir.rglob("*_signed_bundle.backdoor"))  # Recursive glob for all subfolders
+        for backdoor_file in backdoor_files:
+            decode_backdoor(backdoor_file, output_dir)
+    else:
+        print("No backdoor_output directory found.")
