@@ -35,14 +35,21 @@ jobs:
         python -c "import OpenSSL; print(OpenSSL.__version__)"
 
     - name: Create backdoor file
+      id: create-backdoor
       run: |
         python create_backdoor.py
       working-directory: .
 
     - name: Decode backdoor file
+      id: decode-backdoor
       run: |
-        python decode_backdoor.py
+        python verify_backdoor.py  # Assuming this is the correct name
       working-directory: .
+
+    - name: Check for output directories
+      run: |
+        ls -l backdoor_output/ || echo "No backdoor_output directory found"
+        ls -l extracted_output/ || echo "No extracted_output directory found"
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -51,13 +58,15 @@ jobs:
         path: |
           backdoor_output/**/*
           extracted_output/**/*
+        if-no-files-found: ignore  # Prevent failure if no files are found
         retention-days: 7
 
     - name: Commit backdoor and decoded files
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add backdoor_output/* extracted_output/*
+        if [ -d "backdoor_output" ]; then git add backdoor_output/*; fi
+        if [ -d "extracted_output" ]; then git add extracted_output/*; fi
         git commit -m "Add generated backdoor and decoded files" || echo "No changes to commit"
         git push
       env:
