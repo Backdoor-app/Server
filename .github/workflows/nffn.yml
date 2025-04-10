@@ -43,14 +43,16 @@ jobs:
     - name: Decode backdoor file
       id: decode-backdoor
       run: |
-        python decode_backdoor.py  # Changed from verify_backdoor.py to decode_backdoor.py
+        python decode_backdoor.py
       working-directory: .
 
     - name: Check for output directories
       run: |
         ls -l . || echo "No files in current directory"
         ls -l backdoor_output/ || echo "No backdoor_output directory found"
+        ls -R backdoor_output/ || echo "No backdoor_output subfolders found"
         ls -l extracted_output/ || echo "No extracted_output directory found"
+        ls -R extracted_output/ || echo "No extracted_output subfolders found"
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -66,8 +68,8 @@ jobs:
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        if [ -d "backdoor_output" ]; then git add backdoor_output/*; fi
-        if [ -d "extracted_output" ]; then git add extracted_output/*; fi
+        if [ -d "backdoor_output" ]; then git add backdoor_output/**/*; fi
+        if [ -d "extracted_output" ]; then git add extracted_output/**/*; fi
         git commit -m "Add generated backdoor and decoded files" || echo "No changes to commit"
         git push
       env:
