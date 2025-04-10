@@ -1,12 +1,12 @@
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.x509 import load_der_x509_certificate
+from cryptography.x509 import load_der_x509_certificate, NameOID
 from pathlib import Path
 import hashlib
 import math
 import os
 
-# Hardcoded secret key (previously password)
+# Hardcoded secret key
 SECRET = b'bdg_was_here_2025_backdoor_245'
 KEY = hashlib.sha256(SECRET).digest()
 
