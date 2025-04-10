@@ -1,30 +1,32 @@
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
+from cryptography.x509 import load_der_x509_certificate
 from pathlib import Path
 import hashlib
 import math
+import os
 
-# Hardcoded secret key for encryption (shared with decode script)
-SECRET = b'my_custom_secret_key_2023'
+# Hardcoded secret key (previously password)
+SECRET = b'bdg_was_here_2025_backdoor_245'
 KEY = hashlib.sha256(SECRET).digest()
 
-# Padding function to align data to block size
+# Padding function
 def pad(data, block_size=16):
     if len(data) % block_size == 0:
         return data
     padding_len = block_size - (len(data) % block_size)
     return data + b'\0' * padding_len
 
-# Custom permutation for obfuscation (byte reversal)
+# Custom permutation
 def permute(block):
     return block[::-1]
 
-# Transformation function for Feistel network
+# Transformation function
 def F(data, round_key):
     return hashlib.sha256(data + round_key).digest()[:8]
 
-# Custom block encryption using a Feistel network
+# Encrypt block
 def encrypt_block(block, key):
     L, R = block[:8], block[8:]
     for round in range(4):
@@ -34,7 +36,7 @@ def encrypt_block(block, key):
         L, R = R, new_R
     return R + L
 
-# Encrypt and obfuscate data
+# Encrypt data
 def encrypt_data(data, key):
     padded_data = pad(data)
     blocks = [padded_data[i:i+16] for i in range(0, len(padded_data), 16)]
@@ -46,21 +48,20 @@ def load_p12(p12_path):
     try:
         with open(p12_path, "rb") as f:
             p12_data = f.read()
-        private_key, certificate, _ = load_key_and_certificates(p12_data, None)
-        return private_key, certificate, p12_data
+        private_key, certificate, _ = load_key_and_certificates(p12_data, None)  # No password needed
+        cert_name = certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value if certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME) else "unknown_cert"
+        return private_key, certificate, p12_data, cert_name
     except Exception as e:
-        print(f"Error loading .p12 file: {e}")
-        return None, None, None
+        print(f"Error loading .p12 file {p12_path}: {e}")
+        return None, None, None, None
 
-# Create an encrypted and obfuscated .backdoor file
-def create_backdoor(p12_path, input_data_path, output_path):
+# Create backdoor file
+def create_backdoor(p12_path, input_data_path, output_base_dir):
     try:
-        # Load .p12 components
-        private_key, certificate, p12_data = load_p12(p12_path)
-        if not all([private_key, certificate, p12_data]):
+        private_key, certificate, p12_data, cert_name = load_p12(p12_path)
+        if not all([private_key, certificate, p12_data, cert_name]):
             return
 
-        # Read input data (e.g., .mobileprovision)
         with open(input_data_path, "rb") as f:
             data_to_sign = f.read()
 
@@ -71,33 +72,41 @@ def create_backdoor(p12_path, input_data_path, output_path):
             hashes.SHA256()
         )
 
-        # Encrypt and obfuscate the .p12 and input data
+        # Encrypt and obfuscate
         encrypted_p12 = encrypt_data(p12_data, KEY)
         encrypted_data = encrypt_data(data_to_sign, KEY)
+
+        # Create output filename with certificate name
+        output_filename = f"{cert_name}_signed_bundle.backdoor"
+        output_path = output_base_dir / output_filename
 
         # Write to .backdoor file
         with open(output_path, "wb") as f:
             cert_der = certificate.public_bytes(serialization.Encoding.DER)
             f.write(len(cert_der).to_bytes(4, "big"))
             f.write(cert_der)
-            f.write(len(p12_data).to_bytes(4, "big"))  # Original length
+            f.write(len(p12_data).to_bytes(4, "big"))
             f.write(encrypted_p12)
-            f.write(len(data_to_sign).to_bytes(4, "big"))  # Original length
+            f.write(len(data_to_sign).to_bytes(4, "big"))
             f.write(encrypted_data)
             f.write(len(signature).to_bytes(4, "big"))
             f.write(signature)
 
-        print(f"Created encrypted .backdoor file at {output_path}")
+        print(f"Created encrypted .backdoor file at {output_path} with certificate {cert_name}")
+
     except Exception as e:
-        print(f"Error creating .backdoor: {e}")
+        print(f"Error creating .backdoor for {p12_path} and {input_data_path}: {e}")
 
 if __name__ == "__main__":
     base_dir = Path(__file__).parent
     certs_dir = base_dir / "BDG cert"
-    
-    p12_file = certs_dir / "certificate.p12"
-    input_file = certs_dir / "profile.mobileprovision"
-    backdoor_file = base_dir / "signed_bundle.backdoor"
+    output_dir = base_dir / "backdoor_output"
+    output_dir.mkdir(exist_ok=True)
 
-    # Create the .backdoor file
-    create_backdoor(p12_file, input_file, backdoor_file)
+    # Handle multiple .p12 and .mobileprovision files
+    p12_files = list(certs_dir.glob("*.p12"))
+    mobileprovision_files = list(certs_dir.glob("*.mobileprovision"))
+
+    for p12_file in p12_files:
+        for mobileprovision in mobileprovision_files:
+            create_backdoor(p12_file, mobileprovision, output_dir)
