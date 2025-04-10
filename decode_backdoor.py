@@ -9,7 +9,7 @@ import re
 
 # Hardcoded secret key
 SECRET = b'bdg_was_here_2025_backdoor_245'
-KEY = hashlib.sha256(SCRIPT).digest()
+KEY = hashlib.sha256(SECRET).digest()  # Fixed from 'SCRIPT' to 'SECRET'
 
 # Custom permutation
 def permute(block):
