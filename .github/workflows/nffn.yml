@@ -37,26 +37,27 @@ jobs:
     - name: Create backdoor file
       run: |
         python create_backdoor.py
+      working-directory: .
 
     - name: Decode backdoor file
       run: |
         python decode_backdoor.py
+      working-directory: .
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: backdoor-artifacts
         path: |
-          signed_bundle.backdoor
-          extracted.mobileprovision
-          extracted_certificate.p12
+          backdoor_output/**/*
+          extracted_output/**/*
         retention-days: 7
 
-    - name: Commit backdoor file
+    - name: Commit backdoor and decoded files
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add signed_bundle.backdoor decoded.mobileprovision
+        git add backdoor_output/* extracted_output/*
         git commit -m "Add generated backdoor and decoded files" || echo "No changes to commit"
         git push
       env:
