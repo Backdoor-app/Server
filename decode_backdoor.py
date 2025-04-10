@@ -4,20 +4,21 @@ from cryptography.x509 import load_der_x509_certificate
 from pathlib import Path
 import hashlib
 import math
+import os
 
-# Hardcoded secret key for decryption (shared with create script)
-SECRET = b'my_custom_secret_key_2023'
+# Hardcoded secret key (previously password)
+SECRET = b'bdg_was_here_2025_backdoor_245'
 KEY = hashlib.sha256(SECRET).digest()
 
-# Custom permutation for deobfuscation (byte reversal)
+# Custom permutation
 def permute(block):
     return block[::-1]
 
-# Transformation function for Feistel network
+# Transformation function
 def F(data, round_key):
     return hashlib.sha256(data + round_key).digest()[:8]
 
-# Custom block decryption
+# Decrypt block
 def decrypt_block(block, key):
     R, L = block[:8], block[8:]
     for round in range(3, -1, -1):
@@ -27,21 +28,24 @@ def decrypt_block(block, key):
         R, L = L, new_L
     return L + R
 
-# Decrypt and deobfuscate data
+# Decrypt data
 def decrypt_data(encrypted_data, key, original_len):
     blocks = [encrypted_data[i:i+16] for i in range(0, len(encrypted_data), 16)]
     decrypted_blocks = [decrypt_block(permute(block), key) for block in blocks]
     decrypted_data = b''.join(decrypted_blocks)
     return decrypted_data[:original_len]
 
-# Decode and verify the .backdoor file
-def verify_backdoor(backdoor_path, output_data_path, output_p12_path):
+# Verify backdoor file
+def verify_backdoor(backdoor_path, output_base_dir):
     try:
         with open(backdoor_path, "rb") as f:
             # Read certificate
             cert_len = int.from_bytes(f.read(4), "big")
             cert_der = f.read(cert_len)
             certificate = load_der_x509_certificate(cert_der)
+
+            # Get certificate name
+            cert_name = certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value if certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME) else "unknown_cert"
 
             # Read and decrypt .p12 data
             p12_len = int.from_bytes(f.read(4), "big")
@@ -67,28 +71,32 @@ def verify_backdoor(backdoor_path, output_data_path, output_p12_path):
             padding.PKCS1v15(),
             hashes.SHA256()
         )
-        print("Signature verified successfully!")
+        print(f"Signature verified successfully for certificate {cert_name}!")
 
-        # Save decrypted files
+        # Save decrypted files with certificate name
+        output_p12_path = output_base_dir / f"{cert_name}_extracted_certificate.p12"
+        output_data_path = output_base_dir / f"{cert_name}_extracted.mobileprovision"
+
+        output_base_dir.mkdir(exist_ok=True)
+        
         with open(output_p12_path, "wb") as f:
             f.write(p12_data)
         with open(output_data_path, "wb") as f:
             f.write(data)
+        
         print(f"Extracted .p12 to {output_p12_path}")
         print(f"Extracted input data to {output_data_path}")
 
-        return data, p12_data
+        return data, p12_data, cert_name
 
     except Exception as e:
-        print(f"Verification failed: {e}")
-        return None, None
+        print(f"Verification failed for {backdoor_path}: {e}")
+        return None, None, None
 
 if __name__ == "__main__":
     base_dir = Path(__file__).parent
-    
-    backdoor_file = base_dir / "signed_bundle.backdoor"
-    extracted_data = base_dir / "extracted.mobileprovision"
-    extracted_p12 = base_dir / "extracted_certificate.p12"
+    output_dir = base_dir / "extracted_output"
+    backdoor_files = list(base_dir.glob("*.backdoor"))
 
-    # Decode and verify the .backdoor file
-    verify_backdoor(backdoor_file, extracted_data, extracted_p12)
+    for backdoor_file in backdoor_files:
+        verify_backdoor(backdoor_file, output_dir)
