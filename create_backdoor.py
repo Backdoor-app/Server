@@ -48,85 +48,80 @@ def encrypt_data(data, key):
 def sanitize_filename(name):
     return re.sub(r'[<>:"/\\|?*]', '_', name)  # Replace invalid characters with underscore
 
-# Get unique filename by appending a counter if the name already exists
-def get_unique_filename(base_dir, base_name, extension):
-    counter = 1
-    original_name = f"{base_name}{extension}"
-    unique_name = original_name
-
-    while (base_dir / unique_name).exists():
-        unique_name = f"{base_name}_{counter}{extension}"
-        counter += 1
-
-    return unique_name
-
 # Load .p12 file data
 def load_p12(p12_path):
     try:
         with open(p12_path, "rb") as f:
             p12_data = f.read()
         private_key, certificate, _ = load_key_and_certificates(p12_data, None)  # No password needed
-        cert_name = certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value if certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME) else "unknown_cert"
-        sanitized_cert_name = sanitize_filename(cert_name)  # Sanitize the name
+        cert_name = certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value if certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME) else Path(p12_path).stem  # Use filename if no common name
+        sanitized_cert_name = sanitize_filename(cert_name)
         return private_key, certificate, p12_data, sanitized_cert_name
     except Exception as e:
         print(f"Error loading .p12 file {p12_path}: {e}")
         return None, None, None, None
 
-# Create backdoor file
-def create_backdoor(p12_path, input_data_path, output_base_dir):
-    try:
-        private_key, certificate, p12_data, cert_name = load_p12(p12_path)
-        if not all([private_key, certificate, p12_data, cert_name]):
-            return
+# Create backdoor file for specific certificate and mobileprovision in BDG cert
+def create_backdoor(certs_dir, output_base_dir):
+    # Define specific certificate and mobileprovision names
+    cert_names = ["HDFC V1", "HDFC V2", "HDFC V3"]
+    
+    for cert_name in cert_names:
+        p12_file = certs_dir / f"{cert_name}.p12"
+        mobileprovision_file = certs_dir / f"{cert_name}.mobileprovision"
 
-        with open(input_data_path, "rb") as f:
-            data_to_sign = f.read()
+        if not p12_file.exists() or not mobileprovision_file.exists():
+            print(f"Warning: Missing files for {cert_name} - p12: {p12_file}, mobileprovision: {mobileprovision_file}")
+            continue
 
-        # Sign the original input data
-        signature = private_key.sign(
-            data_to_sign,
-            padding.PKCS1v15(),
-            hashes.SHA256()
-        )
+        try:
+            private_key, certificate, p12_data, sanitized_cert_name = load_p12(p12_file)
+            if not all([private_key, certificate, p12_data, sanitized_cert_name]):
+                continue
 
-        # Encrypt and obfuscate
-        encrypted_p12 = encrypt_data(p12_data, KEY)
-        encrypted_data = encrypt_data(data_to_sign, KEY)
+            with open(mobileprovision_file, "rb") as f:
+                data_to_sign = f.read()
 
-        # Create unique output filename with sanitized certificate name
-        base_name = cert_name
-        extension = "_signed_bundle.backdoor"
-        unique_filename = get_unique_filename(output_base_dir, base_name, extension)
-        output_path = output_base_dir / unique_filename
+            # Sign the original input data
+            signature = private_key.sign(
+                data_to_sign,
+                padding.PKCS1v15(),
+                hashes.SHA256()
+            )
 
-        # Write to .backdoor file
-        with open(output_path, "wb") as f:
-            cert_der = certificate.public_bytes(serialization.Encoding.DER)
-            f.write(len(cert_der).to_bytes(4, "big"))
-            f.write(cert_der)
-            f.write(len(p12_data).to_bytes(4, "big"))
-            f.write(encrypted_p12)
-            f.write(len(data_to_sign).to_bytes(4, "big"))
-            f.write(encrypted_data)
-            f.write(len(signature).to_bytes(4, "big"))
-            f.write(signature)
+            # Encrypt and obfuscate
+            encrypted_p12 = encrypt_data(p12_data, KEY)
+            encrypted_data = encrypt_data(data_to_sign, KEY)
 
-        print(f"Created encrypted .backdoor file at {output_path} with certificate {cert_name}")
+            # Create subfolder for this certificate
+            cert_output_dir = output_base_dir / sanitized_cert_name
+            cert_output_dir.mkdir(exist_ok=True, parents=True)
 
-    except Exception as e:
-        print(f"Error creating .backdoor for {p12_path} and {input_data_path}: {e}")
+            # Create output filename
+            output_filename = f"{sanitized_cert_name}_signed_bundle.backdoor"
+            output_path = cert_output_dir / output_filename
+
+            # Write to .backdoor file
+            with open(output_path, "wb") as f:
+                cert_der = certificate.public_bytes(serialization.Encoding.DER)
+                f.write(len(cert_der).to_bytes(4, "big"))
+                f.write(cert_der)
+                f.write(len(p12_data).to_bytes(4, "big"))
+                f.write(encrypted_p12)
+                f.write(len(data_to_sign).to_bytes(4, "big"))
+                f.write(encrypted_data)
+                f.write(len(signature).to_bytes(4, "big"))
+                f.write(signature)
+
+            print(f"Created encrypted .backdoor file at {output_path} with certificate {sanitized_cert_name}")
+
+        except Exception as e:
+            print(f"Error creating .backdoor for {p12_file} and {mobileprovision_file}: {e}")
 
 if __name__ == "__main__":
     base_dir = Path(__file__).parent
     certs_dir = base_dir / "BDG cert"
     output_dir = base_dir / "backdoor_output"
-    output_dir.mkdir(exist_ok=True)
+    output_dir.mkdir(exist_ok=True, parents=True)
 
-    # Handle multiple .p12 and .mobileprovision files
-    p12_files = list(certs_dir.glob("*.p12"))
-    mobileprovision_files = list(certs_dir.glob("*.mobileprovision"))
-
-    for p12_file in p12_files:
-        for mobileprovision in mobileprovision_files:
-            create_backdoor(p12_file, mobileprovision, output_dir)
+    create_backdoor(certs_dir, output_dir)
