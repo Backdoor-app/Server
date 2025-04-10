@@ -5,10 +5,11 @@ from pathlib import Path
 import hashlib
 import math
 import os
+import re
 
 # Hardcoded secret key
 SECRET = b'bdg_was_here_2025_backdoor_245'
-KEY = hashlib.sha256(SECRET).digest()
+KEY = hashlib.sha256(SCRIPT).digest()
 
 # Custom permutation
 def permute(block):
@@ -35,6 +36,22 @@ def decrypt_data(encrypted_data, key, original_len):
     decrypted_data = b''.join(decrypted_blocks)
     return decrypted_data[:original_len]
 
+# Sanitize filename by removing or replacing invalid characters
+def sanitize_filename(name):
+    return re.sub(r'[<>:"/\\|?*]', '_', name)  # Replace invalid characters with underscore
+
+# Get unique filename by appending a counter if the name already exists
+def get_unique_filename(base_dir, base_name, extension):
+    counter = 1
+    original_name = f"{base_name}{extension}"
+    unique_name = original_name
+
+    while (base_dir / unique_name).exists():
+        unique_name = f"{base_name}_{counter}{extension}"
+        counter += 1
+
+    return unique_name
+
 # Verify backdoor file
 def verify_backdoor(backdoor_path, output_base_dir):
     try:
@@ -46,6 +63,7 @@ def verify_backdoor(backdoor_path, output_base_dir):
 
             # Get certificate name
             cert_name = certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value if certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME) else "unknown_cert"
+            sanitized_cert_name = sanitize_filename(cert_name)  # Sanitize the name
 
             # Read and decrypt .p12 data
             p12_len = int.from_bytes(f.read(4), "big")
@@ -73,9 +91,17 @@ def verify_backdoor(backdoor_path, output_base_dir):
         )
         print(f"Signature verified successfully for certificate {cert_name}!")
 
-        # Save decrypted files with certificate name
-        output_p12_path = output_base_dir / f"{cert_name}_extracted_certificate.p12"
-        output_data_path = output_base_dir / f"{cert_name}_extracted.mobileprovision"
+        # Create unique output filenames with sanitized certificate name
+        p12_base_name = sanitized_cert_name
+        mobileprovision_base_name = sanitized_cert_name
+        p12_extension = "_extracted_certificate.p12"
+        mobileprovision_extension = "_extracted.mobileprovision"
+
+        unique_p12_filename = get_unique_filename(output_base_dir, p12_base_name, p12_extension)
+        unique_mobileprovision_filename = get_unique_filename(output_base_dir, mobileprovision_base_name, mobileprovision_extension)
+
+        output_p12_path = output_base_dir / unique_p12_filename
+        output_data_path = output_base_dir / unique_mobileprovision_filename
 
         output_base_dir.mkdir(exist_ok=True)
         
@@ -87,7 +113,7 @@ def verify_backdoor(backdoor_path, output_base_dir):
         print(f"Extracted .p12 to {output_p12_path}")
         print(f"Extracted input data to {output_data_path}")
 
-        return data, p12_data, cert_name
+        return data, p12_data, sanitized_cert_name
 
     except Exception as e:
         print(f"Verification failed for {backdoor_path}: {e}")
