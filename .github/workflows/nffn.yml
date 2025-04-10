@@ -43,11 +43,12 @@ jobs:
     - name: Decode backdoor file
       id: decode-backdoor
       run: |
-        python verify_backdoor.py  # Assuming this is the correct name
+        python decode_backdoor.py  # Changed from verify_backdoor.py to decode_backdoor.py
       working-directory: .
 
     - name: Check for output directories
       run: |
+        ls -l . || echo "No files in current directory"
         ls -l backdoor_output/ || echo "No backdoor_output directory found"
         ls -l extracted_output/ || echo "No extracted_output directory found"
 
