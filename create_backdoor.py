@@ -6,6 +6,7 @@ from pathlib import Path
 import hashlib
 import math
 import os
+import re
 
 # Hardcoded secret key
 SECRET = b'bdg_was_here_2025_backdoor_245'
@@ -43,6 +44,22 @@ def encrypt_data(data, key):
     encrypted_blocks = [permute(encrypt_block(block, key)) for block in blocks]
     return b''.join(encrypted_blocks)
 
+# Sanitize filename by removing or replacing invalid characters
+def sanitize_filename(name):
+    return re.sub(r'[<>:"/\\|?*]', '_', name)  # Replace invalid characters with underscore
+
+# Get unique filename by appending a counter if the name already exists
+def get_unique_filename(base_dir, base_name, extension):
+    counter = 1
+    original_name = f"{base_name}{extension}"
+    unique_name = original_name
+
+    while (base_dir / unique_name).exists():
+        unique_name = f"{base_name}_{counter}{extension}"
+        counter += 1
+
+    return unique_name
+
 # Load .p12 file data
 def load_p12(p12_path):
     try:
@@ -50,7 +67,8 @@ def load_p12(p12_path):
             p12_data = f.read()
         private_key, certificate, _ = load_key_and_certificates(p12_data, None)  # No password needed
         cert_name = certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value if certificate.subject.get_attributes_for_oid(NameOID.COMMON_NAME) else "unknown_cert"
-        return private_key, certificate, p12_data, cert_name
+        sanitized_cert_name = sanitize_filename(cert_name)  # Sanitize the name
+        return private_key, certificate, p12_data, sanitized_cert_name
     except Exception as e:
         print(f"Error loading .p12 file {p12_path}: {e}")
         return None, None, None, None
@@ -76,9 +94,11 @@ def create_backdoor(p12_path, input_data_path, output_base_dir):
         encrypted_p12 = encrypt_data(p12_data, KEY)
         encrypted_data = encrypt_data(data_to_sign, KEY)
 
-        # Create output filename with certificate name
-        output_filename = f"{cert_name}_signed_bundle.backdoor"
-        output_path = output_base_dir / output_filename
+        # Create unique output filename with sanitized certificate name
+        base_name = cert_name
+        extension = "_signed_bundle.backdoor"
+        unique_filename = get_unique_filename(output_base_dir, base_name, extension)
+        output_path = output_base_dir / unique_filename
 
         # Write to .backdoor file
         with open(output_path, "wb") as f:
